@@ -1,0 +1,12 @@
+
+@keyframes borderFlow { 0% { background-position: 0% 0; } 100% { background-position: 100% 0; } }
+@keyframes scanDown { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+@keyframes diamondPulse {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); filter: brightness(1); }
+  25% { opacity: 0.7; transform: scale(0.9) rotate(15deg); filter: brightness(1.2); }
+  50% { opacity: 0.5; transform: scale(0.82) rotate(0deg); filter: brightness(0.9); }
+  75% { opacity: 0.7; transform: scale(0.9) rotate(-15deg); filter: brightness(1.1); }
+}
+@keyframes rotateGlow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes gradientFlow { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

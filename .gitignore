@@ -1,0 +1,50 @@
+# ReTechFlow
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Django local data and secrets
+retech-flow-api/mysql.cnf
+retech-flow-api/.env
+retech-flow-api/media/
+retech-flow-api/staticfiles/
+retech-flow-api/*.sqlite3
+*.sqlite3
+*.db
+*.log
+
+# Vue dependencies, builds and local environment
+retech-flow-web/node_modules/
+retech-flow-web/dist/
+retech-flow-web/.env
+retech-flow-web/.env.*
+!retech-flow-web/.env.example
+*.local
+
+# IDE and editor
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local assistant files
+.claude/
+.claudeignore
+CLAUDE.md
+AGENTS.md
+
+# Local documentation
+docs/
