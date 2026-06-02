@@ -250,6 +250,7 @@ import userApi from '@/api/userapi'
 import ordersApi from '@/api/ordersapi'
 import { getImageUrl, formatPrice } from '@/utils/format'
 import { useRouter } from 'vue-router'
+import { openAuthDialog } from '@/composables/useAuthDialog'
 import { useUserStore } from '@/store/userstore'
 import GoodsCard from '@/components/GoodsCard.vue'
 
@@ -397,7 +398,7 @@ async function toggleLike() {
 async function handleContactSeller() {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录后再联系卖家')
-    router.push('/login')
+    openAuthDialog('login')
     return
   }
   if (!goods.value || !goods.value.seller) {
@@ -426,7 +427,7 @@ async function handleContactSeller() {
 const handleBuy = async () => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录！')
-    router.push('/login')
+    openAuthDialog('login')
     return
   }
   if (goods.value?.seller?.id === userStore.userId) {

@@ -27,9 +27,11 @@ export function createValuationStore(storeId: string, label: string) {
     let socket: WebSocket | null = null
     let reconnectTimer: number | null = null
     let pollTimer: number | null = null
+    let pollErrorCount = 0
     let reconnectAttempts = 0
     const MAX_RECONNECT = 5
     const RECONNECT_BASE_DELAY = 2000
+    const MAX_POLL_ERRORS = 3
 
     /** 建立估价专用 WebSocket 连接 */
     function connectWS() {
@@ -92,11 +94,12 @@ export function createValuationStore(storeId: string, label: string) {
         clearInterval(pollTimer)
         pollTimer = null
       }
+      pollErrorCount = 0
     }
 
     function startPolling(taskId: string) {
       stopPolling()
-      pollTimer = window.setInterval(async () => {
+      const poll = async () => {
         if (currentTaskId.value !== taskId) {
           stopPolling()
           return
@@ -104,6 +107,7 @@ export function createValuationStore(storeId: string, label: string) {
 
         try {
           const response = await goodsApi.getValuationResultAPI(taskId)
+          pollErrorCount = 0
           if (response.code !== 200 || response.data.status === '计算中') return
 
           handleWsMessage({
@@ -113,10 +117,22 @@ export function createValuationStore(storeId: string, label: string) {
             msg: response.msg,
             data: response.data.result
           })
-        } catch {
-          // The request interceptor already reports unexpected failures.
+        } catch (error) {
+          console.error(`[${label}Polling] 获取估价结果失败:`, error)
+          pollErrorCount++
+          if (pollErrorCount >= MAX_POLL_ERRORS) {
+            handleWsMessage({
+              type: 'valuation_result',
+              task_id: taskId,
+              status: '失败',
+              msg: '获取估价结果失败，请检查网络后重试'
+            })
+          }
         }
-      }, 3000)
+      }
+
+      void poll()
+      pollTimer = window.setInterval(() => void poll(), 3000)
     }
 
     /** 处理 WebSocket 推送的估价结果 */

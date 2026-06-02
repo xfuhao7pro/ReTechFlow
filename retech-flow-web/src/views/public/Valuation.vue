@@ -133,8 +133,27 @@
       <el-col :span="12" class="right-col">
         <div class="result-panel">
 
+          <!-- 估价失败状态 -->
+          <div v-if="valuationStore.valuationError && !valuationStore.isValuating" class="result-empty">
+            <div class="empty-content">
+              <div class="ai-scan-container">
+                <div class="device-icon">
+                  <el-icon :size="64"><WarningFilled /></el-icon>
+                </div>
+              </div>
+
+              <div class="empty-text">
+                <h3>本次估价未完成</h3>
+                <p>{{ cleanValuationError }}</p>
+                <div class="features-tags">
+                  <span>请检查图片后重新尝试</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 未估价状态 -->
-          <div v-if="!hasResult && !valuationStore.isValuating" class="result-empty">
+          <div v-else-if="!hasResult && !valuationStore.isValuating" class="result-empty">
             <div class="empty-content">
               <div class="ai-scan-container">
                 <div class="device-icon">
@@ -313,7 +332,8 @@ import {
   Promotion,
   Refresh,
   Iphone,
-  QuestionFilled
+  QuestionFilled,
+  WarningFilled
 } from '@element-plus/icons-vue'
 import { ref, computed, onUnmounted, onActivated, onDeactivated, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -321,9 +341,13 @@ import goodsApi from '@/api/goodsapi'
 import { useRouter } from 'vue-router'
 import { useValuationStore } from '@/store/valuationStore'
 import { useTypewriter } from '@/composables/useTypewriter'
+import { useUserStore } from '@/store/userstore'
+import { openAuthDialog } from '@/composables/useAuthDialog'
+import { hasUsedGuestValuation, markGuestValuationUsed } from '@/utils/guestSession'
 
 const router = useRouter()
 const valuationStore = useValuationStore()
+const userStore = useUserStore()
 const { isTypingTitle, isTypingDesc, start: startTyping} = useTypewriter()
 
 // ---- 页面激活/失活 ----
@@ -369,6 +393,9 @@ const canSubmit = computed(() =>
 )
 
 const isRegenerating = ref(false)
+const cleanValuationError = computed(() =>
+  (valuationStore.valuationError || '请稍后重试').replace(/^安检未通过[：:]/, '')
+)
 
 // 本地结果展示（从 store 同步）
 const hasResult = ref(false)
@@ -500,6 +527,12 @@ const cancelValuation = () => {
 const handleAnalyze = async () => {
   if (!canSubmit.value) return
 
+  if (!userStore.isLoggedIn && hasUsedGuestValuation()) {
+    ElMessage.info('游客仅可体验一次估价，登录后可继续使用')
+    openAuthDialog('login')
+    return
+  }
+
   if (fileList.value.length === 0) {
     ElMessage.warning('请至少上传一张商品图片！')
     return
@@ -508,6 +541,7 @@ const handleAnalyze = async () => {
   hasResult.value = false
   displayedTitle.value = ''
   displayedDesc.value = ''
+  valuationStore.clearResults()
 
   try {
     // 先上传图片
@@ -534,6 +568,7 @@ const handleAnalyze = async () => {
     const res = await goodsApi.valuationAPI(payload)
 
     if (res.code === 200 && res.data?.task_id) {
+      if (!userStore.isLoggedIn) markGuestValuationUsed()
       // 拿到 task_id，存入 store，启动 loading 和动画
       valuationStore.startTask(res.data.task_id)
       startMysteryAnimation()
@@ -542,6 +577,11 @@ const handleAnalyze = async () => {
     }
   } catch (error: any) {
     console.error('估价提交出错:', error)
+    if (!userStore.isLoggedIn && error.response?.status === 403) {
+      markGuestValuationUsed()
+      openAuthDialog('login')
+      return
+    }
     ElMessageBox.alert(
       error.response?.data?.msg || error.message || '网络请求失败，请检查网络或稍后重试',
       '啊哦',
@@ -552,6 +592,12 @@ const handleAnalyze = async () => {
 
 // ---- 重新生成 ----
 const handleRegenerate = async () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.info('登录后可再次估价并重新生成文案')
+    openAuthDialog('login')
+    return
+  }
+
   if (fileList.value.length === 0) {
     ElMessage.warning('请至少上传一张商品图片！')
     return
@@ -599,6 +645,12 @@ const handleCopy = () => {
 }
 
 const handlePublish = () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.info('登录后可一键发布商品')
+    openAuthDialog('login')
+    return
+  }
+
   if (!result.value.generatedTitle || !result.value.generatedDesc) {
     ElMessage.warning('请等待 AI 生成文案后再发布')
     return

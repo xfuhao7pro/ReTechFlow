@@ -30,8 +30,8 @@
           <!-- 右侧登录/注册组件 -->
           <div class="header-right">
             <template v-if="!isLoggedIn">
-              <router-link to="/login" class="auth-btn login">登录</router-link>
-              <router-link to="/register" class="auth-btn register">注册</router-link>
+              <button class="auth-btn login" @click="openAuthDialog('login')">登录</button>
+              <button class="auth-btn register" @click="openAuthDialog('register')">注册</button>
             </template>
             <template v-else>
               <el-popover
@@ -101,6 +101,7 @@ import { storeToRefs } from 'pinia'
 import { getImageUrl } from '@/utils/format'
 import chatApi from '@/api/chatapi'
 import { ref, onUnmounted, watch } from 'vue'
+import { openAuthDialog } from '@/composables/useAuthDialog'
 import {
   User,
   ShoppingBag,
@@ -190,7 +191,7 @@ const handleCommand = (command: string) => {
 // 退出登录处理
 const handleLogout = () => {
   userStore.logout()
-  router.push('/login')
+  router.push('/home')
 }
 </script>
 
@@ -303,6 +304,7 @@ const handleLogout = () => {
 }
 
 .auth-btn {
+  cursor: pointer;
   text-decoration: none;
   display: inline-block;
   padding: 8px 20px;

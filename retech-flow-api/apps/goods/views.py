@@ -2,6 +2,7 @@ import uuid
 import asyncio
 import json
 import logging
+import re
 import threading
 from django.core.files.storage import default_storage
 from django.core.cache import cache
@@ -19,10 +20,32 @@ from django.shortcuts import get_object_or_404
 logger = logging.getLogger(__name__)
 
 VALUATION_TASK_TTL = 3600  # Redis 过期时间（秒）
+GUEST_VALUATION_TTL = 365 * 24 * 3600
+GUEST_TOKEN_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{16,80}$")
 
 
 def _build_redis_key(task_id: str) -> str:
     return f"valuation:task:{task_id}"
+
+
+def _get_guest_token(request) -> str:
+    token = request.headers.get("X-Guest-Token", "").strip()
+    return token if GUEST_TOKEN_PATTERN.fullmatch(token) else ""
+
+
+def _get_request_owner(request) -> str:
+    if request.user and request.user.is_authenticated:
+        return str(request.user.id)
+    guest_token = _get_guest_token(request)
+    return f"guest_{guest_token}" if guest_token else ""
+
+
+def _get_request_owners(request) -> set[str]:
+    owners = {_get_request_owner(request)}
+    guest_token = _get_guest_token(request)
+    if guest_token:
+        owners.add(f"guest_{guest_token}")
+    return {owner for owner in owners if owner}
 
 def _run_valuation_sync(task_id: str, user_id: str, user_desc: str, valid_image_paths: list):
     """
@@ -97,6 +120,9 @@ async def _background_valuation_async(task_id: str, user_id: str, user_desc: str
     # 通过 WebSocket 推送结果给用户（push_valuation_result 是 async 函数）
     from .consumers import push_valuation_result
 
+    if user_id.startswith("guest_"):
+        return
+
     if result.get("status") == "成功":
         await push_valuation_result(user_id, {
             "type": "valuation_result",
@@ -133,9 +159,13 @@ class AIEvaluationView(APIView):
     HTTP POST 瞬间返回 task_id，后台 threading.Thread 执行 AI 计算，
     完成后通过 WebSocket 推送结果 + 更新 Redis 状态。
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
+        owner = _get_request_owner(request)
+        if not owner:
+            return Response({"code": 400, "msg": "缺少游客标识，请刷新页面后重试", "data": None}, status=400)
+
         user_desc = request.data.get('user_desc', '').strip()
 
         if hasattr(request.data, 'getlist'):
@@ -165,8 +195,13 @@ class AIEvaluationView(APIView):
             return Response({"code": 400, "msg": "请至少上传一张有效的设备图片！", "data": None}, status=400)
 
         # 生成 task_id 并写入 Redis 初始状态
+        if owner.startswith("guest_"):
+            usage_key = f"valuation:guest-used:{owner}"
+            if not cache.add(usage_key, "1", GUEST_VALUATION_TTL):
+                return Response({"code": 403, "msg": "游客体验次数已用完，请登录后继续估价", "data": None}, status=403)
+
         task_id = uuid.uuid4().hex
-        user_id = str(request.user.id)
+        user_id = owner
         redis_key = _build_redis_key(task_id)
 
         cache.set(redis_key, json.dumps({
@@ -192,7 +227,7 @@ class AIEvaluationView(APIView):
 
 
 class AIEvaluationResultView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, task_id):
         cached_result = cache.get(_build_redis_key(task_id))
@@ -200,7 +235,7 @@ class AIEvaluationResultView(APIView):
             return Response({"code": 404, "msg": "估价任务不存在或已过期", "data": None}, status=404)
 
         result = json.loads(cached_result)
-        if str(result.get("user_id")) != str(request.user.id):
+        if str(result.get("user_id")) not in _get_request_owners(request):
             return Response({"code": 403, "msg": "无权查看该估价任务", "data": None}, status=403)
 
         return Response({
@@ -381,9 +416,15 @@ class ImageUploadView(APIView):
     商品临时图片上传接口（免登录，带自动销毁机制）
     """
     # 允许免登录访问
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
+        owner = _get_request_owner(request)
+        if not owner:
+            return Response({"code": 400, "msg": "缺少游客标识，请刷新页面后重试"}, status=400)
+        if owner.startswith("guest_") and cache.get(f"valuation:guest-used:{owner}"):
+            return Response({"code": 403, "msg": "游客体验次数已用完，请登录后继续使用"}, status=403)
+
         # 清硬盘接口
         clean_expired_temp_files()
 

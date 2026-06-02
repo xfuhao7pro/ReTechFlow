@@ -4,8 +4,9 @@ import axios, {
   type AxiosResponse,
 } from 'axios'
 import { ElMessage } from 'element-plus'
-import router from '../router'
 import { runtimeConfig } from '@/config/runtime'
+import { openAuthDialog } from '@/composables/useAuthDialog'
+import { getGuestToken } from '@/utils/guestSession'
 
 interface RetryRequestConfig extends AxiosRequestConfig {
   _retry?: boolean
@@ -48,6 +49,7 @@ const refreshAccessToken = async (): Promise<string> => {
 service.interceptors.request.use((config) => {
   const token = localStorage.getItem('access')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  config.headers['X-Guest-Token'] = getGuestToken()
   return config
 })
 
@@ -67,7 +69,7 @@ service.interceptors.response.use(
       } catch {
         clearSession()
         ElMessage.error('登录状态已过期，请重新登录')
-        if (router.currentRoute.value.path !== '/login') router.push('/login')
+        openAuthDialog('login')
         return Promise.reject(error)
       }
     }

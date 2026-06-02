@@ -9,6 +9,10 @@ export const passwordRules: FormItemRule[] = [
   { required: true, message: '请输入密码', trigger: 'blur' },
   {
     validator: (_rule: any, value: string, callback: any) => {
+      if (!value) {
+        callback()
+        return
+      }
       const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[_\.@])[a-zA-Z\d_\.@]{6,20}$/
       if (!pattern.test(value)) {
         callback(new Error('密码长度为 6-20 位，需包含大小写字母、数字及特殊字符（_ . @）'))

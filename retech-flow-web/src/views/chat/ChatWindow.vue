@@ -110,6 +110,7 @@ import chatApi, { type ChatMessage, type ChatSession } from '@/api/chatapi'
 import { useUserStore } from '@/store/userstore'
 import { getImageUrl } from '@/utils/format'
 import { buildWsUrl } from '@/config/runtime'
+import { openAuthDialog } from '@/composables/useAuthDialog'
 
 const props = defineProps<{
   sessionId: string
@@ -405,7 +406,7 @@ watch(() => props.sessionId, () => {
 onMounted(() => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
-    router.push('/login')
+    openAuthDialog('login')
     return
   }
   initChat()

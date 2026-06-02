@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from corsheaders.defaults import default_headers
 from backend.project_config import PROJECT_CONFIG
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -97,6 +98,7 @@ USE_TZ = False
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+CORS_ALLOW_HEADERS = (*default_headers, "x-guest-token")
 
 AUTH_USER_MODEL = "users.PlatformUser"
 REST_FRAMEWORK = {
