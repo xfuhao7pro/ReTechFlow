@@ -21,9 +21,11 @@
       <div class="mp-toolbar">
         <el-tabs v-model="filterStatus" class="status-tabs" @tab-change="applyFilter">
           <el-tab-pane label="全部" name="all" />
+          <el-tab-pane label="审核中" :name="4" />
+          <el-tab-pane label="审核驳回" :name="5" />
           <el-tab-pane label="在售" :name="1" />
-          <el-tab-pane label="已售出" :name="3" />
-          <el-tab-pane label="已下架" :name="2" />
+          <el-tab-pane label="已售出" :name="2" />
+          <el-tab-pane label="已下架" :name="3" />
         </el-tabs>
         
         <div class="mp-search">

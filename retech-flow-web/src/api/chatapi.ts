@@ -35,6 +35,16 @@ export interface ChatSession {
   updated_at: string
 }
 
+export interface SystemAnnouncement {
+  id: number
+  title: string
+  content: string
+  publisher: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 // 1. 创建或获取聊天会话
 export const createSessionAPI = (data: CreateSessionData) => {
   return request<ApiResponse<{ session_id: string }>>({
@@ -77,10 +87,18 @@ export const markReadAPI = (sessionId: string) => {
   })
 }
 
+export const getSystemAnnouncementsAPI = () => {
+  return request<ApiResponse<SystemAnnouncement[]>>({
+    url: '/chats/system-announcements/',
+    method: 'get'
+  })
+}
+
 export default {
   createSessionAPI,
   getSessionsAPI,
   getMessagesAPI,
   sendMessageAPI,
-  markReadAPI
+  markReadAPI,
+  getSystemAnnouncementsAPI
 }

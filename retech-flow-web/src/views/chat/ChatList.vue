@@ -12,6 +12,22 @@
       </div>
     </div>
 
+    <section v-if="announcements.length" class="system-announcements">
+      <header>
+        <strong>系统消息</strong>
+        <span>平台公告与重要通知</span>
+      </header>
+      <div class="notice-list">
+        <article v-for="notice in announcements" :key="notice.id" class="notice-card">
+          <div>
+            <strong>{{ notice.title }}</strong>
+            <span>{{ formatTime(notice.created_at) }}</span>
+          </div>
+          <p>{{ notice.content }}</p>
+        </article>
+      </div>
+    </section>
+
     <!-- 主体区域 -->
     <div class="chat-body" v-loading="loading">
       <div class="chat-layout">
@@ -110,7 +126,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Picture, ChatDotRound, ChatRound, Bell, Search } from '@element-plus/icons-vue'
-import chatApi, { type ChatSession } from '@/api/chatapi'
+import chatApi, { type ChatSession, type SystemAnnouncement } from '@/api/chatapi'
 import { getImageUrl } from '@/utils/format'
 import ChatWindow from './ChatWindow.vue'
 import DecorativeBackground from '@/components/DecorativeBackground.vue'
@@ -119,6 +135,7 @@ const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
 const sessions = ref<ChatSession[]>([])
+const announcements = ref<SystemAnnouncement[]>([])
 const activeSessionId = ref<string>('')
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
@@ -163,6 +180,15 @@ const fetchSessions = async () => {
   }
 }
 
+const fetchAnnouncements = async () => {
+  try {
+    const res = await chatApi.getSystemAnnouncementsAPI()
+    if (res.code === 200 && res.data) announcements.value = res.data
+  } catch (error) {
+    console.error('获取系统公告失败:', error)
+  }
+}
+
 const goToChat = (sessionId: string) => {
   activeSessionId.value = sessionId
   router.replace({ query: { ...route.query, sessionId } })
@@ -197,6 +223,7 @@ const formatTime = (timeStr: string) => {
 }
 
 onMounted(() => {
+  fetchAnnouncements()
   fetchSessions()
 })
 </script>
@@ -249,6 +276,65 @@ onMounted(() => {
   color: #909399;
   font-size: 13px;
   margin: 0;
+}
+
+.system-announcements {
+  padding: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.system-announcements header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.system-announcements header strong {
+  color: #172033;
+  font-size: 16px;
+}
+
+.system-announcements header span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.notice-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.notice-card {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.notice-card div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notice-card strong {
+  color: #172033;
+  font-size: 14px;
+}
+
+.notice-card span,
+.notice-card p {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.notice-card p {
+  margin: 8px 0 0;
+  line-height: 1.6;
 }
 
 /* ===== 主体布局 ===== */

@@ -32,11 +32,17 @@
       <template v-else-if="orderList.length > 0">
         <div class="order-list">
           <div class="order-item" v-for="order in orderList" :key="order.order_id">
-            <div class="order-header">
-              <span class="order-time">{{ formatDate(order.created_at) }}</span>
-              <span class="order-no">订单号：{{ order.order_id }}</span>
-              <span class="buyer-name">买家：{{ order.buyer_name || order.buyer?.nickname || '未知' }}</span>
-              <div class="order-status" :class="getStatusClass(order.status)">
+            <div class="order-top">
+              <div class="trader-info">
+                <el-avatar
+                  :size="34"
+                  :src="getImageUrl(order.buyer_avatar || order.buyer?.avatar)"
+                >
+                  {{ getNameInitial(order.buyer_name || order.buyer?.nickname) }}
+                </el-avatar>
+                <span class="trader-name">{{ order.buyer_name || order.buyer?.nickname || '未知' }}</span>
+              </div>
+              <div class="order-status status-pill" :class="getStatusClass(order.status)">
                 {{ getStatusText(order.status) }}
               </div>
             </div>
@@ -49,41 +55,17 @@
                 />
                 <div class="goods-detail">
                   <div class="goods-title">{{ order.goods_title || '商品信息已失效' }}</div>
-                  <div class="goods-price">¥ {{ formatPrice(order.amount) }}</div>
+                  <div class="goods-sub">点击查看商品详情</div>
                 </div>
               </div>
-              <div class="order-actions">
-                <el-button 
-                  v-if="order.status === 0 || order.status === 1" 
-                  type="danger" 
-                  plain
-                  size="small"
-                  @click="handleCancelOrder(order)"
-                >
-                  取消订单
-                </el-button>
-                <el-button 
-                  v-if="order.status === 1" 
-                  type="primary" 
-                  size="small"
-                  @click="openShipDialog(order)"
-                >
-                  去发货
-                </el-button>
-                <el-button 
-                  v-if="order.status === 2 || order.status === 3" 
-                  type="info" 
-                  size="small"
-                  @click="openLogisticsDialog(order)"
-                >
-                  查看物流
-                </el-button>
+              <div class="order-amount">
+                <span class="amount-label">成交金额</span>
+                <span class="goods-price">¥ {{ formatPrice(order.amount) }}</span>
               </div>
-            </div>
-            <div class="order-footer" v-if="order.receiver_name">
-              <div class="delivery-info">
-                <span class="label">买家收货信息：</span>
-                <span>{{ order.receiver_name }} ({{ order.receiver_phone }}) {{ order.receiver_address }}</span>
+              <div class="order-actions">
+                <el-button class="action-trigger" plain @click="openOrderInfoDialog(order)">
+                  订单信息
+                </el-button>
               </div>
             </div>
           </div>
@@ -97,6 +79,70 @@
           </el-button>
         </el-empty>
       </div>
+
+      <!-- 订单信息弹窗 -->
+      <el-dialog
+        v-model="orderInfoDialogVisible"
+        title="订单信息"
+        width="640px"
+        class="order-info-dialog"
+      >
+        <div v-if="currentOrder" class="order-info-panel">
+          <div class="info-goods" @click="goToGoods(currentOrder.goods_id)">
+            <el-image class="info-goods-img" :src="getImageUrl(currentOrder.goods_image)" fit="cover" />
+            <div class="info-goods-main">
+              <div class="info-goods-title">{{ currentOrder.goods_title || '商品信息已失效' }}</div>
+              <div class="info-goods-price">¥ {{ formatPrice(currentOrder.amount) }}</div>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-row">
+              <span class="info-label">订单号</span>
+              <span class="info-value mono">{{ currentOrder.order_id }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">下单时间</span>
+              <span class="info-value">{{ formatDate(currentOrder.created_at) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">订单状态</span>
+              <span class="info-value">{{ getStatusText(currentOrder.status) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">买家</span>
+              <span class="info-value">{{ currentOrder.buyer_name || currentOrder.buyer?.nickname || '未知' }}</span>
+            </div>
+            <div class="info-row" v-if="currentOrder.tracking_number">
+              <span class="info-label">物流单号</span>
+              <span class="info-value mono">{{ currentOrder.tracking_number }}</span>
+            </div>
+            <div class="info-row full" v-if="currentOrder.receiver_name">
+              <span class="info-label">收货信息</span>
+              <span class="info-value">
+                {{ currentOrder.receiver_name }}（{{ currentOrder.receiver_phone }}）{{ currentOrder.receiver_address }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <template #footer>
+          <div class="info-actions">
+            <el-button @click="goToGoods(currentOrder?.goods_id)">查看商品</el-button>
+            <el-button v-if="currentOrder?.status === 1" type="primary" @click="openShipFromDialog">去发货</el-button>
+            <el-button v-if="currentOrder?.status === 2 || currentOrder?.status === 3" @click="openLogisticsFromDialog">
+              查看物流
+            </el-button>
+            <el-button
+              v-if="currentOrder?.status === 0 || currentOrder?.status === 1"
+              type="danger"
+              plain
+              @click="handleCancelFromDialog"
+            >
+              取消订单
+            </el-button>
+          </div>
+        </template>
+      </el-dialog>
 
       <!-- 发货弹窗 -->
       <el-dialog
@@ -195,6 +241,7 @@ const orderList = ref<any[]>([])
 const filterStatus = ref<'all' | number>('all')
 
 // 发货相关状态
+const orderInfoDialogVisible = ref(false)
 const shipDialogVisible = ref(false)
 const shippingLoading = ref(false)
 const shipFormRef = ref<FormInstance>()
@@ -255,6 +302,15 @@ const getStatusClass = (status: number) => {
   }
 }
 
+const getNameInitial = (name?: string) => {
+  return (name || '未').trim().slice(0, 1).toUpperCase()
+}
+
+const openOrderInfoDialog = (order: any) => {
+  currentOrder.value = order
+  orderInfoDialogVisible.value = true
+}
+
 function applyFilter() {
   loadList()
 }
@@ -307,6 +363,21 @@ const openShipDialog = (order: any) => {
   if (shipFormRef.value) {
     shipFormRef.value.clearValidate()
   }
+}
+
+const openShipFromDialog = () => {
+  if (!currentOrder.value) return
+  openShipDialog(currentOrder.value)
+}
+
+const openLogisticsFromDialog = async () => {
+  if (!currentOrder.value) return
+  await openLogisticsDialog(currentOrder.value)
+}
+
+const handleCancelFromDialog = async () => {
+  if (!currentOrder.value) return
+  await handleCancelOrder(currentOrder.value)
 }
 
 // 提交发货
@@ -525,120 +596,347 @@ onMounted(() => {
 .order-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   position: relative;
   z-index: 1;
 }
 
 .order-item {
-  background: #ffffff;
-  border: 1px solid #ebeef5;
-  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
   overflow: hidden;
-  transition: all 0.3s;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.02);
+  padding: 16px 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
 }
 
 .order-item:hover {
-  box-shadow: 0 4px 16px 0 rgba(0,0,0,0.08);
-  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
 }
 
-.order-header {
-  background: #f5f7fa;
-  padding: 12px 20px;
+.order-top {
   display: flex;
   align-items: center;
-  font-size: 13px;
-  color: #606266;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
 }
 
-.order-time {
-  margin-right: 20px;
+.trader-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.trader-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .order-no {
-  margin-right: 20px;
+  color: #475569;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .buyer-name {
-  flex: 1;
+  color: #475569;
+}
+
+.meta-divider {
+  width: 1px;
+  height: 12px;
+  background: #dbe3ee;
 }
 
 .order-status {
   font-weight: 600;
 }
-.order-status.status-pending { color: #f56c6c; }
-.order-status.status-shipping { color: #e6a23c; }
-.order-status.status-success { color: #67c23a; }
-.order-status.status-closed { color: #909399; }
+
+.status-pill {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  background: #f1f5f9;
+}
+
+.order-status.status-pending { color: #dc2626; background: #fef2f2; }
+.order-status.status-shipping { color: #d97706; background: #fff7ed; }
+.order-status.status-success { color: #16a34a; background: #f0fdf4; }
+.order-status.status-closed { color: #64748b; background: #f1f5f9; }
 
 .order-body {
-  padding: 20px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px 112px;
+  gap: 20px;
   align-items: center;
-  justify-content: space-between;
+  padding: 0;
 }
 
 .goods-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  min-width: 0;
   cursor: pointer;
-  flex: 1;
 }
 
 .goods-img {
-  width: 80px;
-  height: 80px;
-  border-radius: 6px;
-  border: 1px solid #ebeef5;
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .goods-detail {
   flex: 1;
+  min-width: 0;
 }
 
 .goods-title {
+  margin-bottom: 6px;
+  color: #172033;
   font-size: 15px;
-  color: #303133;
-  margin-bottom: 8px;
+  line-height: 1.4;
+  font-weight: 650;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-weight: 500;
   transition: color 0.2s;
 }
 
 .goods-info:hover .goods-title {
-  color: #409eff;
+  color: #2563eb;
+}
+
+.goods-sub {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.order-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.amount-label {
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 .goods-price {
-  font-size: 18px;
-  font-weight: 600;
-  color: #f56c6c;
+  color: #ef4444;
+  font-size: 20px;
+  font-weight: 750;
+  line-height: 1;
 }
 
 .order-actions {
-  min-width: 120px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.action-trigger {
+  width: 104px;
+  height: 34px;
+  margin-left: 0;
+  border-radius: 7px;
+  color: #334155;
+  font-weight: 600;
+  background: #fff;
+  border-color: #dbe3ee;
+}
+
+.order-info-dialog :deep(.el-dialog__body) {
+  padding: 8px 24px 20px;
+  background: #fbfdff;
+}
+
+.order-info-panel {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.info-goods {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #e8eef6;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.info-goods-img {
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+}
+
+.info-goods-main {
+  min-width: 0;
+}
+
+.info-goods-title {
+  margin-bottom: 8px;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.info-goods-price {
+  color: #ef4444;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  align-items: flex-end;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e8eef6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.info-row.full {
+  grid-column: 1 / -1;
+}
+
+.info-label {
+  font-size: 12px;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+.info-value {
+  min-width: 0;
+  color: #1e293b;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.info-actions :deep(.el-button) {
+  margin-left: 0;
+  border-radius: 7px;
+  font-weight: 600;
+}
+
+.action-trigger:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+  background: #eff6ff;
 }
 
 .order-footer {
-  padding: 12px 20px;
-  background: #fafafa;
-  border-top: 1px solid #f0f0f0;
+  padding: 14px 0 0;
+  background: transparent;
+  border: 0;
   font-size: 13px;
-  color: #606266;
+  color: #475569;
+}
+
+.delivery-info {
+  display: flex;
+  gap: 6px;
+  line-height: 1.6;
 }
 
 .delivery-info .label {
-  color: #909399;
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+@media (max-width: 900px) {
+  .order-body {
+    grid-template-columns: minmax(0, 1fr) 120px;
+  }
+
+  .order-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .order-item {
+    padding: 14px;
+  }
+
+  .meta-divider {
+    display: none;
+  }
+
+  .goods-img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .order-body {
+    grid-template-columns: 1fr;
+  }
+
+  .order-amount {
+    align-items: flex-start;
+  }
+
+  .order-actions {
+    justify-content: flex-start;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-info {
+    display: block;
+  }
 }
 
 .ms-empty-wrap {

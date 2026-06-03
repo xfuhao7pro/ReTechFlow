@@ -31,6 +31,10 @@ export interface ResetPasswordData {
   password_confirm: string
 }
 
+export interface SendCodeData {
+  cooldown: number
+}
+
 // 登录接口
 const loginAPI = (data: object) => {
   return request<ApiResponse<LoginData>>({
@@ -51,7 +55,7 @@ const registerAPI = (data: RegisterData) => {
 
 // 发送验证码接口
 const sendCodeAPI = (email: string) => {
-  return request<ApiResponse<null>>({
+  return request<ApiResponse<SendCodeData>>({
     url: '/users/send-code/',
     method: 'post',
     data: { email }

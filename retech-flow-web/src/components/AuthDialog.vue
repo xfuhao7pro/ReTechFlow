@@ -181,8 +181,8 @@ watch(visible, (isVisible) => {
   }
 })
 
-const startCountdown = () => {
-  countdown.value = 60
+const startCountdown = (seconds = 60) => {
+  countdown.value = Math.max(Number(seconds) || 60, 1)
   if (timer) clearInterval(timer)
   timer = window.setInterval(() => {
     countdown.value--
@@ -207,9 +207,12 @@ const sendCode = async () => {
   try {
     const response = await authAPI.sendCodeAPI(form.email)
     if (response.code === 200) {
-      ElMessage.success('验证码已发送，请查收')
-      startCountdown()
+      ElMessage.success(response.msg || '验证码已发送，请查收')
+      startCountdown(response.data?.cooldown || 60)
     }
+  } catch (error: any) {
+    const cooldown = error?.response?.data?.data?.cooldown
+    if (cooldown) startCountdown(cooldown)
   } finally {
     sendingCode.value = false
   }
@@ -237,6 +240,7 @@ const submit = async () => {
           user.nickname || user.username || 'User',
           user.avatar || '',
           user.id,
+          user.role || 0,
         )
         if (form.rememberMe) {
           localStorage.setItem('rememberMe', JSON.stringify({ email: form.email }))

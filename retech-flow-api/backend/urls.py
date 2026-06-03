@@ -8,6 +8,7 @@ urlpatterns = [
     path("goods/", include("apps.goods.urls", namespace="goods")),
     path("chats/", include("apps.chats.urls", namespace="chats")),
     path("orders/", include("apps.orders.urls", namespace="orders")),
+    path("platform-admin/", include("apps.adminpanel.urls", namespace="adminpanel")),
 
 ]
 

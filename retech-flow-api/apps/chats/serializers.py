@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ChatSession, ChatMessage
+from .models import ChatSession, ChatMessage, SystemAnnouncement
 from apps.users.models import PlatformUser  # 确保路径正确
 from apps.goods.models import Goods, GoodsImage
 
@@ -61,3 +61,16 @@ class ChatSessionSerializer(serializers.ModelSerializer):
         # 如果我是发起者，对方就是接收者；反之亦然
         target_user = obj.receiver if obj.initiator == request_user else obj.initiator
         return UserSimpleSerializer(target_user).data
+
+
+class SystemAnnouncementSerializer(serializers.ModelSerializer):
+    publisher = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SystemAnnouncement
+        fields = ["id", "title", "content", "is_active", "publisher", "created_at", "updated_at"]
+
+    def get_publisher(self, obj):
+        if not obj.created_by:
+            return "系统"
+        return obj.created_by.nickname or obj.created_by.email

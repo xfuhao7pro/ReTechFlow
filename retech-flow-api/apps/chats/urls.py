@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     SessionViewSet,
     MessageListView,
-    MarkReadView, SendMessageView
+    MarkReadView, SendMessageView, SystemAnnouncementListView
 )
 app_name = 'chats'
 
@@ -16,5 +16,6 @@ urlpatterns = [
     # 标记已读
     path('sessions/<str:session_id>/read/', MarkReadView.as_view(), name='mark_read'),
     path('messages/', SendMessageView.as_view(), name='send_message'),
+    path('system-announcements/', SystemAnnouncementListView.as_view(), name='system_announcements'),
 
 ]

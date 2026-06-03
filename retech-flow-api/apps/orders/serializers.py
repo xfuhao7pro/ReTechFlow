@@ -17,7 +17,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
     # 3. 卖家和买家信息展示
     seller_name = serializers.CharField(source='seller.nickname', read_only=True)
+    seller_avatar = serializers.CharField(source='seller.avatar', read_only=True)
     buyer_name = serializers.CharField(source='buyer.nickname', read_only=True)
+    buyer_avatar = serializers.CharField(source='buyer.avatar', read_only=True)
 
     class Meta:
         model = Order
@@ -25,7 +27,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'order_id', 'amount', 'status', 'status_text',
             'goods_id', 'goods_title', 'goods_price', 'goods_image', 
-            'seller_name', 'buyer_name',
+            'seller_name', 'seller_avatar', 'buyer_name', 'buyer_avatar',
             'receiver_name', 'receiver_phone', 'receiver_address',
             'tracking_number', 'created_at', 'pay_time', 'consign_time'
         ]

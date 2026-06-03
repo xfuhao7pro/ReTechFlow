@@ -21,6 +21,7 @@ export const useUserStore = defineStore('user', () => {
   // 尝试从 localStorage 恢复用户信息，避免刷新后丢失
   const userName = ref(localStorage.getItem('userName') || '')
   const userAvatar = ref(localStorage.getItem('userAvatar') || '')
+  const userRole = ref(Number(localStorage.getItem('userRole') || 0))
   // userId 优先从 localStorage 读取，兜底从 JWT token 解码
   const storedUserId = localStorage.getItem('userId')
   const userId = ref<string | null>(storedUserId || extractUserIdFromToken())
@@ -32,11 +33,19 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 登录后保存 token 和用户信息
-  const setLoginState = (access: string, refresh: string, name: string, avatar: string = '', id: string | null = null) => {
+  const setLoginState = (
+    access: string,
+    refresh: string,
+    name: string,
+    avatar: string = '',
+    id: string | null = null,
+    role: number = 0,
+  ) => {
     token.value = access
     userName.value = name || 'User'
     userAvatar.value = avatar
     userId.value = id
+    userRole.value = role
     isLoggedIn.value = true
     
     // 持久化存储
@@ -45,6 +54,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('userName', userName.value)
     if (avatar) localStorage.setItem('userAvatar', avatar)
     if (id) localStorage.setItem('userId', id)
+    if (role) localStorage.setItem('userRole', String(role))
   }
 
   const setAvatar = (avatarUrl: string) => {
@@ -57,12 +67,14 @@ export const useUserStore = defineStore('user', () => {
     userName.value = ''
     userAvatar.value = ''
     userId.value = null
+    userRole.value = 0
     isLoggedIn.value = false
     localStorage.removeItem('access')
     localStorage.removeItem('refresh')
     localStorage.removeItem('userName')
     localStorage.removeItem('userAvatar')
     localStorage.removeItem('userId')
+    localStorage.removeItem('userRole')
   }
 
   return { 
@@ -70,6 +82,7 @@ export const useUserStore = defineStore('user', () => {
     userName, 
     userAvatar,
     userId,
+    userRole,
     isLoggedIn, 
     setLoginState, 
     setAvatar,

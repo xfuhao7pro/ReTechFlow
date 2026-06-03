@@ -13,6 +13,8 @@ class GoodsStatusChoices(models.IntegerChoices):
     ON_SALE = 1, "在售中"
     SOLD = 2, "已售出"
     OFF_SHELVES = 3, "已下架"
+    PENDING_REVIEW = 4, "审核中"
+    REVIEW_REJECTED = 5, "审核驳回"
 # 发货方式
 class DeliveryMethodChoices(models.IntegerChoices):
     FREE_SHIPPING = 1, "包邮"
@@ -73,6 +75,7 @@ class Goods(models.Model):
     )
     status = models.IntegerField("商品状态", choices=GoodsStatusChoices.choices,
                                  default=GoodsStatusChoices.ON_SALE)
+    audit_reason = models.CharField("审核备注", max_length=200, blank=True, default="")
     views = models.PositiveIntegerField("浏览量", default=0)
 
     created_at = models.DateTimeField("创建时间", auto_now_add=True)

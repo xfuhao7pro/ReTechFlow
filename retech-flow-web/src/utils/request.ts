@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus'
 import { runtimeConfig } from '@/config/runtime'
 import { openAuthDialog } from '@/composables/useAuthDialog'
 import { getGuestToken } from '@/utils/guestSession'
+import { useUserStore } from '@/store/userstore'
 
 interface RetryRequestConfig extends AxiosRequestConfig {
   _retry?: boolean
@@ -20,9 +21,20 @@ const service: AxiosInstance = axios.create({
 let refreshPromise: Promise<string> | null = null
 
 const clearSession = () => {
-  localStorage.removeItem('access')
-  localStorage.removeItem('refresh')
-  localStorage.removeItem('userId')
+  try {
+    useUserStore().logout()
+  } catch {
+    localStorage.removeItem('access')
+    localStorage.removeItem('refresh')
+    localStorage.removeItem('userName')
+    localStorage.removeItem('userAvatar')
+    localStorage.removeItem('userId')
+  }
+}
+
+const requireLogin = () => {
+  clearSession()
+  openAuthDialog('login')
 }
 
 const refreshAccessToken = async (): Promise<string> => {
@@ -67,11 +79,14 @@ service.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access}`
         return service(originalRequest)
       } catch {
-        clearSession()
-        ElMessage.error('登录状态已过期，请重新登录')
-        openAuthDialog('login')
+        requireLogin()
         return Promise.reject(error)
       }
+    }
+
+    if (status === 401) {
+      requireLogin()
+      return Promise.reject(error)
     }
 
     if (status === 400) ElMessage.error(error.response.data.msg || '请求参数错误')

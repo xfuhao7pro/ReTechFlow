@@ -47,3 +47,28 @@ class ChatMessage(models.Model):
         verbose_name = '消息聊天'
         db_table = 'second_hand_message'
         verbose_name_plural = verbose_name
+
+
+class SystemAnnouncement(models.Model):
+    title = models.CharField("公告标题", max_length=80)
+    content = models.TextField("公告内容")
+    is_active = models.BooleanField("是否启用", default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_announcements",
+        verbose_name="发布人",
+    )
+    created_at = models.DateTimeField("发布时间", auto_now_add=True)
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        db_table = "system_announcement"
+        ordering = ["-created_at"]
+        verbose_name = "系统公告"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.title

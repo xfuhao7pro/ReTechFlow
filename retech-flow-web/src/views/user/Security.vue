@@ -51,7 +51,16 @@
             </div>
             <div class="item-desc">
               <template v-if="securityData.is_verified">
-                {{ maskedRealName }} ({{ maskedIdCard }})
+                <div class="realname-info">
+                  <span>{{ maskedRealName }}</span>
+                  <span>{{ maskedIdCard }}</span>
+                </div>
+              </template>
+              <template v-else-if="securityData.verification_status === 1">
+                实名认证资料已提交，等待平台审核
+              </template>
+              <template v-else-if="securityData.verification_status === 3">
+                已驳回：{{ securityData.verification_reject_reason || '请重新提交认证资料' }}
               </template>
               <template v-else>
                 完成实名认证，解锁更多平台功能
@@ -60,6 +69,7 @@
           </div>
           <div class="item-action">
             <el-tag type="success" class="static-status-tag" v-if="securityData.is_verified">已认证</el-tag>
+            <el-tag type="warning" class="static-status-tag" v-else-if="securityData.verification_status === 1">审核中</el-tag>
             <el-button type="primary" v-else @click="openRealNameDialog">
               去认证
             </el-button>
@@ -139,7 +149,9 @@ const securityData = reactive<SecurityData>({
   telephone: '',
   real_name: '',
   id_card: '',
-  is_verified: false
+  is_verified: false,
+  verification_status: 0,
+  verification_reject_reason: ''
 })
 
 // 格式化脱敏手机号
@@ -171,6 +183,33 @@ const maskedIdCard = computed(() => {
   }
   return id
 })
+
+const validateIdCard = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  const id = value.trim().toUpperCase()
+  if (!/^\d{17}[\dX]$/.test(id)) {
+    callback(new Error('请输入18位身份证号码'))
+    return
+  }
+  const birthYear = Number(id.slice(6, 10))
+  const birthMonth = Number(id.slice(10, 12))
+  const birthDay = Number(id.slice(12, 14))
+  const birthday = new Date(birthYear, birthMonth - 1, birthDay)
+  const validDate = birthday.getFullYear() === birthYear
+    && birthday.getMonth() === birthMonth - 1
+    && birthday.getDate() === birthDay
+  if (!validDate || birthday > new Date() || birthYear < 1900) {
+    callback(new Error('身份证出生日期不正确'))
+    return
+  }
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+  const checkCodes = '10X98765432'
+  const sum = weights.reduce((total, weight, index) => total + Number(id[index]) * weight, 0)
+  if (checkCodes[sum % 11] !== id[17]) {
+    callback(new Error('身份证校验码不正确'))
+    return
+  }
+  callback()
+}
 
 // 加载数据
 const fetchSecurityData = async () => {
@@ -262,7 +301,7 @@ const realNameRules = reactive<FormRules>({
   ],
   id_card: [
     { required: true, message: '请输入身份证号', trigger: 'blur' },
-    { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: '请输入正确的身份证号码', trigger: 'blur' }
+    { validator: validateIdCard, trigger: 'blur' }
   ]
 })
 
@@ -283,7 +322,7 @@ const submitRealName = async () => {
           id_card: realNameForm.id_card
         })
         if (res.code === 200) {
-          ElMessage.success('实名认证提交成功')
+          ElMessage.success('实名认证资料已提交，等待平台审核')
           realNameDialogVisible.value = false
           fetchSecurityData()
         } else {
@@ -364,6 +403,12 @@ onMounted(() => {
   font-size: 14px;
   color: #909399;
   padding-left: 26px;
+}
+
+.realname-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .static-status-tag {

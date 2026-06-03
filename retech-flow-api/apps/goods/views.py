@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny,IsAuthenticated
 import os
 
-from .models import Category, Goods, GoodsLike
+from .models import Category, Goods, GoodsLike, GoodsStatusChoices
 from .utils.ai_valuation import evaluate_3c_goods,is_3c_product_by_llm
 from  .serializers import GoodsSerializer,CategorySerializer
 from .utils.file_clean import clean_expired_temp_files
@@ -265,12 +265,12 @@ class GoodsCreateView(APIView):
                 "errors": serializer.errors
             }, status=400)
         
-        # 强制将 status 设为 1 (在售)
-        serializer.save(seller=request.user, status=1)
+        # 强制进入审核中，审核通过后才允许进入交易广场
+        serializer.save(seller=request.user, status=GoodsStatusChoices.PENDING_REVIEW, audit_reason="")
 
         return Response({
             "code": 200,
-            "msg": "商品发布成功！",
+            "msg": "商品已提交审核，通过后将自动上架！",
             "data": serializer.data
         })
 class GoodsDraftView(APIView):
@@ -526,9 +526,10 @@ class GoodsStatusUpdateView(APIView):
         elif action == 'publish':
             if goods.status == 1:
                 return Response({"code": 400, "msg": "商品已经在售中"})
-            goods.status = 1  # 恢复为在售中
-            goods.save()
-            return Response({"code": 200, "msg": "商品已重新上架"})
+            goods.status = GoodsStatusChoices.PENDING_REVIEW
+            goods.audit_reason = ""
+            goods.save(update_fields=["status", "audit_reason", "updated_at"])
+            return Response({"code": 200, "msg": "商品已重新提交审核，审核通过后将自动上架"})
 
 class GoodsDeleteView(APIView):
     """

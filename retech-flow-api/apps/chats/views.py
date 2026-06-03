@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from django.utils import timezone
-from .models import ChatSession, ChatMessage
-from .serializers import ChatSessionSerializer, ChatMessageSerializer
+from .models import ChatSession, ChatMessage, SystemAnnouncement
+from .serializers import ChatSessionSerializer, ChatMessageSerializer, SystemAnnouncementSerializer
 from django.shortcuts import get_object_or_404
 
 
@@ -154,4 +154,13 @@ class MarkReadView(APIView):
             "msg": "已读标记成功",
             "data": {"updated_count": updated_count} #顺便返回一下清掉了几条未读
         })
+
+
+class SystemAnnouncementListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notices = SystemAnnouncement.objects.filter(is_active=True).order_by("-created_at")[:50]
+        serializer = SystemAnnouncementSerializer(notices, many=True)
+        return Response({"code": 200, "msg": "获取系统公告成功", "data": serializer.data})
 

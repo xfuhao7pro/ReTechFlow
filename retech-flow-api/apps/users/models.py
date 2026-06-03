@@ -2,7 +2,7 @@ import shortuuid
 from django.contrib.auth.hashers import make_password
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from .utils import randomUserNickname
+from .utils import defaultAvatar, randomUserNickname
 from django.conf import settings
 
 
@@ -15,6 +15,13 @@ class UserRoleChoices(models.IntegerChoices):
     NORMAL_USER = 1, "普通用户"
     AUDITOR = 2, "平台审核员"
     ADMIN = 3, "系统管理员"
+
+
+class IdentityVerificationStatusChoices(models.IntegerChoices):
+    NOT_SUBMITTED = 0, "未提交"
+    PENDING = 1, "待审核"
+    APPROVED = 2, "已通过"
+    REJECTED = 3, "已驳回"
 
 
 # 自定义用户管理器 (适配邮箱 Email 登录)
@@ -70,7 +77,7 @@ class PlatformUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField("邮箱", unique=True, max_length=100)
     telephone = models.CharField("联系电话", max_length=11, blank=True)  # 仅作展示和联系使用，不作为登录凭证
     nickname = models.CharField("昵称", max_length=30, blank=True, default=randomUserNickname.generate_default_nickname)
-    avatar = models.CharField('头像', max_length=100, default='avatars/default_01.png', blank=True)
+    avatar = models.CharField('头像', max_length=100, default=defaultAvatar.random_default_avatar, blank=True)
 
     bio = models.CharField('个性签名', max_length=200, blank=True, default='这个人很懒，什么都没写~')
 
@@ -84,6 +91,12 @@ class PlatformUser(AbstractBaseUser, PermissionsMixin):
     role = models.IntegerField("系统角色", choices=UserRoleChoices.choices,
                                default=UserRoleChoices.NORMAL_USER)
     is_verified = models.BooleanField("实名认证状态", default=False)
+    verification_status = models.IntegerField(
+        "实名认证审核状态",
+        choices=IdentityVerificationStatusChoices.choices,
+        default=IdentityVerificationStatusChoices.NOT_SUBMITTED,
+    )
+    verification_reject_reason = models.CharField("实名认证驳回原因", max_length=200, blank=True, default="")
     balance = models.DecimalField("账户余额", max_digits=10, decimal_places=2, default=0.00)
 
     # Django 权限与状态字段

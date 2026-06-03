@@ -31,6 +31,27 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/admin/login',
+    name: 'admin-login',
+    component: () => import('../views/admin/AdminLogin.vue'),
+    meta: { title: '后台登录' },
+  },
+  {
+    path: '/admin',
+    component: () => import('../views/admin/AdminLayout.vue'),
+    redirect: '/admin/dashboard',
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      { path: 'dashboard', name: 'admin-dashboard', component: () => import('../views/admin/AdminDashboard.vue'), meta: { title: '后台控制台', requiresAuth: true, requiresAdmin: true } },
+      { path: 'goods', name: 'admin-goods', component: () => import('../views/admin/AdminGoods.vue'), meta: { title: '商品审核', requiresAuth: true, requiresAdmin: true } },
+      { path: 'identity', name: 'admin-identity', component: () => import('../views/admin/AdminIdentity.vue'), meta: { title: '实名认证审核', requiresAuth: true, requiresAdmin: true } },
+      { path: 'orders', name: 'admin-orders', component: () => import('../views/admin/AdminOrders.vue'), meta: { title: '订单监管', requiresAuth: true, requiresAdmin: true } },
+      { path: 'categories', name: 'admin-categories', component: () => import('../views/admin/AdminCategories.vue'), meta: { title: '机型分类库', requiresAuth: true, requiresAdmin: true } },
+      { path: 'announcements', name: 'admin-announcements', component: () => import('../views/admin/AdminAnnouncements.vue'), meta: { title: '公告管理', requiresAuth: true, requiresAdmin: true } },
+      { path: 'users', name: 'admin-users', component: () => import('../views/admin/AdminUsers.vue'), meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true, requiresSuperAdmin: true } },
+    ],
+  },
   { path: '/login', redirect: '/home' },
   { path: '/register', redirect: '/home' },
   { path: '/resetpwd', redirect: '/home' },
@@ -43,9 +64,17 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const token = localStorage.getItem('access')
+  const role = Number(localStorage.getItem('userRole') || 0)
   if (to.matched.some((record) => record.meta.requiresAuth) && !token) {
+    if (to.path.startsWith('/admin')) return '/admin/login'
     openAuthDialog('login')
     return false
+  }
+  if (to.matched.some((record) => record.meta.requiresAdmin) && ![2, 3].includes(role)) {
+    return '/admin/login'
+  }
+  if (to.matched.some((record) => record.meta.requiresSuperAdmin) && role !== 3) {
+    return '/admin/dashboard'
   }
   return true
 })

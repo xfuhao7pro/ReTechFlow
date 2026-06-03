@@ -1,10 +1,32 @@
+from datetime import date
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .utils.verifyEmailCode import verify_email_code
 from .utils.checkPwd import validate_password_strength
-from .models import Address
+from .models import Address, IdentityVerificationStatusChoices
 
 User = get_user_model()
+
+ID_CARD_WEIGHTS = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+ID_CARD_CHECK_CODES = "10X98765432"
+
+
+def validate_china_id_card(id_card: str) -> tuple[bool, str]:
+    value = id_card.upper()
+    if len(value) != 18 or not value[:17].isdigit() or value[-1] not in "0123456789X":
+        return False, "请输入18位身份证号码"
+    if value[:2] == "00":
+        return False, "身份证地址码不正确"
+    try:
+        birth = date(int(value[6:10]), int(value[10:12]), int(value[12:14]))
+    except ValueError:
+        return False, "身份证出生日期不正确"
+    if birth < date(1900, 1, 1) or birth > date.today():
+        return False, "身份证出生日期不正确"
+    total = sum(int(value[index]) * weight for index, weight in enumerate(ID_CARD_WEIGHTS))
+    if ID_CARD_CHECK_CODES[total % 11] != value[-1]:
+        return False, "身份证校验码不正确"
+    return True, ""
 
 # 公共密码邮箱序列化
 class BaseAuthSerializer(serializers.Serializer):
@@ -38,6 +60,10 @@ class BaseAuthSerializer(serializers.Serializer):
 
 # 登录序列化
 class UserLoginSerializer(BaseAuthSerializer):
+    def validate_password(self, value):
+        # 登录只校验密码是否匹配，不再套用注册/重置密码的强度规则。
+        return value
+
     def validate(self, attrs):
         email = attrs["email"]
         password = attrs["password"]
@@ -47,6 +73,8 @@ class UserLoginSerializer(BaseAuthSerializer):
             raise serializers.ValidationError("邮箱错误！该邮箱尚未注册！")
         if not user.check_password(password):
             raise serializers.ValidationError("密码错误！请重新输入！")
+        if not user.is_active:
+            raise serializers.ValidationError("该账号已被禁用，请联系平台管理员！")
 
         attrs["user"] = user
         return attrs
@@ -129,9 +157,34 @@ class UserSecuritySerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ['email', 'telephone', 'real_name', 'id_card', 'is_verified']
+        fields = [
+            'email', 'telephone', 'real_name', 'id_card', 'is_verified',
+            'verification_status', 'verification_reject_reason'
+        ]
         # 注意：身份证、真实姓名一旦认证不让改，邮箱修改要走专门的验证码接口
-        read_only_fields = ['email', 'is_verified', 'real_name', 'id_card']
+        read_only_fields = [
+            'email', 'is_verified', 'real_name', 'id_card',
+            'verification_status', 'verification_reject_reason'
+        ]
+
+
+class RealNameSubmitSerializer(serializers.Serializer):
+    real_name = serializers.CharField(required=True, min_length=2, max_length=20)
+    id_card = serializers.CharField(required=True, min_length=18, max_length=18)
+
+    def validate_id_card(self, value):
+        success, msg = validate_china_id_card(value)
+        if not success:
+            raise serializers.ValidationError(msg)
+        return value.upper()
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if user.is_verified or user.verification_status == IdentityVerificationStatusChoices.APPROVED:
+            raise serializers.ValidationError("您已完成实名认证，无需重复提交")
+        if user.verification_status == IdentityVerificationStatusChoices.PENDING:
+            raise serializers.ValidationError("实名认证正在审核中，请勿重复提交")
+        return attrs
 
 
 class UserWalletSerializer(serializers.ModelSerializer):

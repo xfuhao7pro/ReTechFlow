@@ -12,9 +12,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Address
+from .models import Address, IdentityVerificationStatusChoices
 from .serializers import UserLoginSerializer, UserRegisterSerializer, UserResetPasswordSerializer, \
-    UserProfileSerializer, AddressSerializer, UserSecuritySerializer, UserWalletSerializer
+    UserProfileSerializer, AddressSerializer, UserSecuritySerializer, UserWalletSerializer, RealNameSubmitSerializer
 from .utils.sendEmailCode import send_email_code
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -69,10 +69,14 @@ class UserSendEmailCodeView(APIView):
         if not email:
             return Response({'code': 400, 'msg': '邮箱不能为空', 'data': None}, status=400)
 
-        success, msg = send_email_code(email)
+        success, msg, cooldown = send_email_code(email)
         status_code = 200 if success else 400
 
-        return Response({'code': status_code, 'msg': msg, 'data': None}, status=status_code)
+        return Response({
+            'code': status_code,
+            'msg': msg,
+            'data': {'cooldown': cooldown}
+        }, status=status_code)
 
 class UserRegisterView(APIView):
     """
@@ -131,6 +135,33 @@ class UserSecurityView(APIView):
         serializer = UserSecuritySerializer(request.user)
         # 💡 安全进阶：可以在这里把身份证号脱敏，比如返回 410***********1234
         return Response({"code": 200, "data": serializer.data})
+
+
+class RealNameSubmitView(APIView):
+    """提交实名认证资料，等待后台审核"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = RealNameSubmitSerializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            error_msg = list(serializer.errors.values())[0][0] if serializer.errors else "提交失败"
+            return Response({"code": 400, "msg": str(error_msg), "errors": serializer.errors}, status=400)
+
+        user = request.user
+        user.real_name = serializer.validated_data["real_name"]
+        user.id_card = serializer.validated_data["id_card"]
+        user.is_verified = False
+        user.verification_status = IdentityVerificationStatusChoices.PENDING
+        user.verification_reject_reason = ""
+        user.save(update_fields=[
+            "real_name", "id_card", "is_verified",
+            "verification_status", "verification_reject_reason"
+        ])
+        return Response({
+            "code": 200,
+            "msg": "实名认证资料已提交，请等待平台审核",
+            "data": UserSecuritySerializer(user).data,
+        })
 
 class UserWalletView(APIView):
     """获取资产钱包信息 & 充值"""

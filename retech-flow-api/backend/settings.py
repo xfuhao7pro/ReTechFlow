@@ -133,6 +133,7 @@ EMAIL_USE_SSL = PROJECT_CONFIG["email"]["use_ssl"]
 EMAIL_HOST_USER = PROJECT_CONFIG["email"]["user"]
 EMAIL_HOST_PASSWORD = PROJECT_CONFIG["email"]["password"]
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "5"))
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
 CACHES = {

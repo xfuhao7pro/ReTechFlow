@@ -117,8 +117,10 @@ const statusText = computed(() => {
   const statusMap: Record<number, string> = {
     0: '草稿',
     1: '在售',
-    2: '已下架',
-    3: '已售出',
+    2: '已售出',
+    3: '已下架',
+    4: '审核中',
+    5: '审核驳回',
   }
   return statusMap[props.item.status] || ''
 })
@@ -129,8 +131,10 @@ function getStatusClass(statusVal: number) {
   const map: Record<number, string> = {
     0: 'draft',
     1: 'on_sale',
-    2: 'offline',
-    3: 'sold',
+    2: 'sold',
+    3: 'offline',
+    4: 'review',
+    5: 'rejected',
   }
   return `wf-status--${map[statusVal] || 'offline'}`
 }
@@ -161,7 +165,7 @@ const onClick = () => {
 
 .wf-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
+  transform: none;
   border-color: #d0d0d0;
 }
 
@@ -177,11 +181,16 @@ const onClick = () => {
   width: 100%;
   height: 100%;
   display: block;
-  transition: transform 0.5s ease;
+  transition: none;
 }
 
 .wf-card:hover .wf-img {
-  transform: scale(1.03);
+  transform: none;
+}
+
+.wf-img :deep(img) {
+  transform: none !important;
+  backface-visibility: hidden;
 }
 
 .img-placeholder,
@@ -209,12 +218,12 @@ const onClick = () => {
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-size: 18px;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: box-shadow 0.3s ease;
   z-index: 2;
 }
 
 .wf-card:hover .wf-like-badge {
-  transform: scale(1.15) rotate(10deg);
+  transform: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -235,7 +244,7 @@ const onClick = () => {
 }
 
 .wf-card:hover .wf-status {
-  transform: scale(1.05) translateY(-2px);
+  transform: none;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
@@ -260,6 +269,18 @@ const onClick = () => {
 .wf-status--draft {
   color: #fff;
   background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  border: none;
+}
+
+.wf-status--review {
+  color: #fff;
+  background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+  border: none;
+}
+
+.wf-status--rejected {
+  color: #fff;
+  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
   border: none;
 }
 

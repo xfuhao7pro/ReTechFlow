@@ -904,13 +904,13 @@ const submitForm = async (formEl: FormInstance | undefined) => {
           category_id: form.category_id!,
           delivery_method: form.delivery_method,
           temp_images: currentImagePaths.value,
-          status: 1,
+          status: 4,
           attributes: form.attributes
         }
 
         const res = await goodsApi.createGoodsAPI(payload)
         if (res.code === 200) {
-          ElMessage.success('商品发布成功！')
+          ElMessage.success(res.msg || '商品已提交审核，通过后将自动上架')
           clearDraft(true) // 清空表单、Pinia 状态、localStorage
           router.push('/orders/published')
         } else {

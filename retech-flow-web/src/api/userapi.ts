@@ -28,6 +28,8 @@ export interface SecurityData {
   real_name: string
   id_card: string
   is_verified: boolean
+  verification_status: number
+  verification_reject_reason: string
 }
 
 // 钱包数据

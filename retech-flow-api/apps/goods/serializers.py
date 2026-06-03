@@ -70,7 +70,7 @@ class GoodsSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'price',
             'category', 'category_id', 'attributes','delivery_method',
-            'status', 'views', 'created_at', 'updated_at',
+            'status', 'audit_reason', 'views', 'created_at', 'updated_at',
             'temp_images', 'images','is_like', 'wants', 'seller', 'cover'
         ]
         read_only_fields = ['id', 'views', 'created_at', 'updated_at']
@@ -101,11 +101,11 @@ class GoodsSerializer(serializers.ModelSerializer):
         return obj.like_by.filter(user=request.user).exists()
 
     def validate(self, attrs):
-        # 默认设置在售
-        status = attrs.get('status', 1)
-        # 创建商品限制状态只能是【草稿】或【在售中】！
-        if not self.instance and status not in [0, 1]:
-            raise serializers.ValidationError({"status": "新创建商品的状态只能是草稿或在售中！"})
+        # 默认设置审核中
+        status = attrs.get('status', 4)
+        # 创建商品限制状态只能是【草稿】或【审核中】！
+        if not self.instance and status not in [0, 4]:
+            raise serializers.ValidationError({"status": "新创建商品的状态只能是草稿或审核中！"})
         # 状态非草稿规则限制
         if status != 0:
             # 必须有标题

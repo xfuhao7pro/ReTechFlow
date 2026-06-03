@@ -11,6 +11,7 @@ from .views import (
     UserSecurityView,
     UserWalletView,
     ChangePhoneView,
+    RealNameSubmitView,
 
 )
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -26,6 +27,7 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user-profile'),
     # 账号与安全
     path('security/', UserSecurityView.as_view(), name='user-security'),
+    path('security/realname/', RealNameSubmitView.as_view(), name='realname-submit'),
     # 资产钱包
     path('wallet/', UserWalletView.as_view(), name='user-wallet'),
     # 钱包充值
