@@ -96,5 +96,26 @@ export default {
       url: `/orders/${orderId}/cancel/`,
       method: 'post'
     })
+  },
+
+  /**
+   * 提交订单申诉
+   */
+  createAppeal(orderId: string, data: { issue_type: string; description: string }) {
+    return request<ApiResponse>({
+      url: `/orders/${orderId}/appeal/`,
+      method: 'post',
+      data
+    })
+  },
+
+  /**
+   * 获取我的申诉记录
+   */
+  getMyAppeals() {
+    return request<ApiResponse>({
+      url: '/orders/appeals/my/',
+      method: 'get'
+    })
   }
 }

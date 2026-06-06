@@ -1,5 +1,10 @@
 import { runtimeConfig } from '@/config/runtime'
 
+const normalizeLegacyAvatarPath = (path: string): string => {
+  const match = path.match(/^(?:\/?media\/)?(?:\/?avatars\/)?default_(0[1-5])\.png$/)
+  return match ? `avatars/default_avatar_${match[1]}.png` : path
+}
+
 /**
  * 全局格式化工具函数
  */
@@ -32,6 +37,7 @@ export const formatTime = (dateStr: string | null | undefined): string => {
  */
 export const getImageUrl = (imagePath: string | null | undefined): string => {
   if (!imagePath) return '';
+  imagePath = normalizeLegacyAvatarPath(imagePath)
   
   // 如果已经是完整URL，直接返回
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('blob:')) {

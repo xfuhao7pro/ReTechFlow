@@ -1,5 +1,4 @@
 from datetime import date, timedelta
-
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
@@ -532,4 +531,5 @@ class AdminAnnouncementDetailView(AdminPermissionMixin, APIView):
     def delete(self, request, notice_id):
         notice = get_object_or_404(SystemAnnouncement, id=notice_id)
         notice.delete()
+
         return api_response(None, "公告已删除")

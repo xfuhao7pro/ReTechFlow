@@ -7,6 +7,7 @@ from .views import (
     OrderLogisticsView,
     ShipOrderView,
     ConfirmReceiptView, CancelOrderView,
+    CreateOrderAppealView, MyOrderAppealListView,
 )
 app_name = 'orders'
 
@@ -21,4 +22,6 @@ urlpatterns = [
     path('<str:order_id>/ship/', ShipOrderView.as_view(), name='order_ship'),
     path('<str:order_id>/confirm/', ConfirmReceiptView.as_view(), name='order_confirm'),
     path('<str:order_id>/cancel/', CancelOrderView.as_view(), name='order_cancel'),
+    path('<str:order_id>/appeal/', CreateOrderAppealView.as_view(), name='order_appeal'),
+    path('appeals/my/', MyOrderAppealListView.as_view(), name='my_order_appeals'),
 ]

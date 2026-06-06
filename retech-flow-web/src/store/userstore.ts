@@ -52,14 +52,23 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('access', access)
     localStorage.setItem('refresh', refresh)
     localStorage.setItem('userName', userName.value)
-    if (avatar) localStorage.setItem('userAvatar', avatar)
+    if (avatar) {
+      localStorage.setItem('userAvatar', avatar)
+    } else {
+      localStorage.removeItem('userAvatar')
+    }
     if (id) localStorage.setItem('userId', id)
     if (role) localStorage.setItem('userRole', String(role))
   }
 
   const setAvatar = (avatarUrl: string) => {
-      userAvatar.value = avatarUrl
+    userAvatar.value = avatarUrl
+    if (avatarUrl) {
+      localStorage.setItem('userAvatar', avatarUrl)
+    } else {
+      localStorage.removeItem('userAvatar')
     }
+  }
 
   // 退出登录
   const logout = () => {

@@ -36,6 +36,20 @@ export default {
       params,
     })
   },
+  getAppeals(params?: AdminPageParams) {
+    return request<any>({
+      url: '/platform-admin/appeals/',
+      method: 'get',
+      params,
+    })
+  },
+  resolveAppeal(appealId: number, data: { result: 'refund_buyer' | 'release_seller' | 'close'; admin_remark: string }) {
+    return request<any>({
+      url: `/platform-admin/appeals/${appealId}/resolve/`,
+      method: 'post',
+      data,
+    })
+  },
   getIdentityReviews(params?: AdminPageParams) {
     return request<any>({
       url: '/platform-admin/identity/',

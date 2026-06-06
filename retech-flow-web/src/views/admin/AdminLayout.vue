@@ -26,6 +26,10 @@
           <el-icon><Tickets /></el-icon>
           <span>订单监管</span>
         </el-menu-item>
+        <el-menu-item index="/admin/appeals">
+          <el-icon><Tickets /></el-icon>
+          <span>申诉仲裁</span>
+        </el-menu-item>
         <el-menu-item index="/admin/categories">
           <el-icon><Grid /></el-icon>
           <span>机型分类库</span>

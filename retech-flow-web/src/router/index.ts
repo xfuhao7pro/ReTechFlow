@@ -47,6 +47,7 @@ const routes = [
       { path: 'goods', name: 'admin-goods', component: () => import('../views/admin/AdminGoods.vue'), meta: { title: '商品审核', requiresAuth: true, requiresAdmin: true } },
       { path: 'identity', name: 'admin-identity', component: () => import('../views/admin/AdminIdentity.vue'), meta: { title: '实名认证审核', requiresAuth: true, requiresAdmin: true } },
       { path: 'orders', name: 'admin-orders', component: () => import('../views/admin/AdminOrders.vue'), meta: { title: '订单监管', requiresAuth: true, requiresAdmin: true } },
+      { path: 'appeals', name: 'admin-appeals', component: () => import('../views/admin/AdminAppeals.vue'), meta: { title: '申诉仲裁', requiresAuth: true, requiresAdmin: true } },
       { path: 'categories', name: 'admin-categories', component: () => import('../views/admin/AdminCategories.vue'), meta: { title: '机型分类库', requiresAuth: true, requiresAdmin: true } },
       { path: 'announcements', name: 'admin-announcements', component: () => import('../views/admin/AdminAnnouncements.vue'), meta: { title: '公告管理', requiresAuth: true, requiresAdmin: true } },
       { path: 'users', name: 'admin-users', component: () => import('../views/admin/AdminUsers.vue'), meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true, requiresSuperAdmin: true } },

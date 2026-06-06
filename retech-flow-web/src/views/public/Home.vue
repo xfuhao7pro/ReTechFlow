@@ -228,6 +228,7 @@ onMounted(async () => {
 
 .hero-content {
   flex: 1;
+  min-width: 0;
 }
 
 .hero-title {
@@ -236,6 +237,7 @@ onMounted(async () => {
   color: #303133;
   margin-bottom: 20px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .highlight {
@@ -629,6 +631,7 @@ onMounted(async () => {
 
   .hero-title {
     font-size: 38px;
+    white-space: normal;
   }
 
   .features-grid,

@@ -17,6 +17,7 @@ from .views import (
     AdminUserRoleView,
     AdminUserStatusView,
 )
+from .views_appeals import AdminAppealListView, AdminAppealResolveView
 
 app_name = "adminpanel"
 
@@ -26,6 +27,8 @@ urlpatterns = [
     path("goods/<str:goods_id>/status/", AdminGoodsStatusView.as_view(), name="goods_status"),
     path("identity/", AdminIdentityListView.as_view(), name="identity"),
     path("orders/", AdminOrderListView.as_view(), name="orders"),
+    path("appeals/", AdminAppealListView.as_view(), name="appeals"),
+    path("appeals/<int:appeal_id>/resolve/", AdminAppealResolveView.as_view(), name="appeal_resolve"),
     path("users/", AdminUserListView.as_view(), name="users"),
     path("users/<str:user_id>/reset-password/", AdminUserPasswordResetView.as_view(), name="user_reset_password"),
     path("users/<str:user_id>/verify/", AdminUserVerifyView.as_view(), name="user_verify"),

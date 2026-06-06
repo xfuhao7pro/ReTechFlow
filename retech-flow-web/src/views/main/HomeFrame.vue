@@ -69,10 +69,59 @@
               </el-popover>
 
               <!-- 消息通知按钮 -->
-              <div class="message-bell" @click="router.push('/orders/messages')">
-                <el-badge :value="totalUnread" :hidden="totalUnread === 0" :max="99">
-                  <el-icon :size="22"><Bell /></el-icon>
-                </el-badge>
+              <div
+                class="message-entry"
+                @mouseenter="openMessagePreview"
+                @mouseleave="closeMessagePreview"
+              >
+                <button
+                  class="message-bell"
+                  :class="{ 'is-open': messagePanelVisible }"
+                  type="button"
+                  @click="toggleMessagePanel"
+                >
+                  <el-badge :value="messageBadgeCount" :hidden="messageBadgeCount === 0" :max="99">
+                    <el-icon :size="22"><Bell /></el-icon>
+                  </el-badge>
+                </button>
+
+                <transition name="message-pop">
+                  <section
+                    v-if="messagePanelVisible"
+                    class="message-panel"
+                    @mouseenter="openMessagePreview"
+                    @mouseleave="closeMessagePreview"
+                  >
+                    <header>
+                      <div>
+                        <strong>通知</strong>
+                        <span>{{ totalUnread > 0 ? `${totalUnread} 条私信未读` : '暂无未读私信' }}</span>
+                      </div>
+                      <button v-if="messagePanelPinned" type="button" @click.stop="messagePanelPinned = false">关闭</button>
+                    </header>
+
+                    <button class="customer-summary" type="button" @click="goMessages">
+                      <el-icon><ChatDotRound /></el-icon>
+                      <span>{{ totalUnread > 0 ? `${totalUnread} 条私信未读` : '查看私信' }}</span>
+                    </button>
+
+                    <div class="system-title">
+                      <strong>平台通知</strong>
+                      <span>{{ announcements.length }}</span>
+                    </div>
+
+                    <div v-if="announcements.length" class="notice-list">
+                      <article v-for="notice in announcements" :key="notice.id" class="notice-card">
+                        <div class="notice-card-head">
+                          <strong>{{ notice.title }}</strong>
+                          <time>{{ formatNoticeTime(notice.created_at) }}</time>
+                        </div>
+                        <p>{{ notice.content }}</p>
+                      </article>
+                    </div>
+                    <div v-else class="empty-notice">暂无系统通知</div>
+                  </section>
+                </transition>
               </div>
             </template>
           </div>
@@ -99,8 +148,8 @@ import { useUserStore } from '@/store/userstore'
 import { useValuationStore } from '@/store/valuationStore'
 import { storeToRefs } from 'pinia'
 import { getImageUrl } from '@/utils/format'
-import chatApi from '@/api/chatapi'
-import { ref, onUnmounted, watch } from 'vue'
+import chatApi, { type SystemAnnouncement } from '@/api/chatapi'
+import { computed, ref, onUnmounted, watch } from 'vue'
 import { openAuthDialog } from '@/composables/useAuthDialog'
 import {
   User,
@@ -110,7 +159,8 @@ import {
   SwitchButton,
   ArrowDown,
   DocumentAdd,
-  Bell
+  Bell,
+  ChatDotRound
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -120,7 +170,12 @@ const valuationStore = useValuationStore()
 const { isLoggedIn, userName, userAvatar } = storeToRefs(userStore)
 
 const totalUnread = ref(0)
+const announcements = ref<SystemAnnouncement[]>([])
+const messagePanelVisible = ref(false)
+const messagePanelPinned = ref(false)
 let unreadTimer: number | null = null
+
+const messageBadgeCount = computed(() => totalUnread.value + announcements.value.length)
 
 const fetchUnreadCount = async () => {
   if (!isLoggedIn.value) return
@@ -134,6 +189,16 @@ const fetchUnreadCount = async () => {
   }
 }
 
+const fetchAnnouncements = async () => {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await chatApi.getSystemAnnouncementsAPI()
+    if (res.code === 200 && res.data) announcements.value = res.data
+  } catch (err) {
+    console.error('获取系统通知失败', err)
+  }
+}
+
 watch(isLoggedIn, (newVal) => {
   // 先清除旧的定时器，防止重复创建
   if (unreadTimer) {
@@ -142,11 +207,15 @@ watch(isLoggedIn, (newVal) => {
   }
   if (newVal) {
     fetchUnreadCount()
+    fetchAnnouncements()
     unreadTimer = window.setInterval(fetchUnreadCount, 30000)
     // 建立估价 WebSocket 连接（全局生命周期，登录即连）
     valuationStore.connectWS()
   } else {
     totalUnread.value = 0
+    announcements.value = []
+    messagePanelVisible.value = false
+    messagePanelPinned.value = false
     // 退出登录时断开估价 WS 并重置状态
     valuationStore.reset()
   }
@@ -164,6 +233,37 @@ const getSafeAvatarUrl = (avatarPath: string) => {
   if (!avatarPath) return defaultAvatar
   // 使用之前抽离的全局 getImageUrl 工具函数来处理后端返回的相对路径
   return getImageUrl(avatarPath)
+}
+
+const openMessagePreview = () => {
+  messagePanelVisible.value = true
+}
+
+const closeMessagePreview = () => {
+  if (!messagePanelPinned.value) messagePanelVisible.value = false
+}
+
+const toggleMessagePanel = () => {
+  messagePanelPinned.value = !messagePanelPinned.value
+  messagePanelVisible.value = messagePanelPinned.value || !messagePanelVisible.value
+}
+
+const goMessages = () => {
+  messagePanelVisible.value = false
+  messagePanelPinned.value = false
+  router.push('/orders/messages')
+}
+
+const formatNoticeTime = (timeStr: string) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 // 菜单配置 - 解耦设计，方便后续添加
@@ -203,18 +303,216 @@ const handleLogout = () => {
   flex-shrink: 0; /* 防止挤压折行 */
 }
 
-.message-bell {
+.message-entry {
+  position: relative;
   display: flex;
+  align-items: center;
+}
+
+.message-bell {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: #fff;
-  transition: opacity 0.3s;
-  padding: 5px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 0;
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
-.message-bell:hover {
-  opacity: 0.8;
+.message-bell:hover,
+.message-bell.is-open {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.message-panel {
+  position: absolute;
+  top: 42px;
+  left: calc(100% + 12px);
+  right: auto;
+  width: 360px;
+  max-height: 460px;
+  z-index: 50;
+  padding: 0;
+  color: #1f2937;
+  background: #fff;
+  border: 1px solid #d9e1ea;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(31, 49, 85, 0.14);
+  overflow: hidden;
+}
+
+.message-panel::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-left: 1px solid #d9e1ea;
+  border-top: 1px solid #d9e1ea;
+  transform: rotate(45deg);
+}
+
+.message-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.message-panel header div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.message-panel header strong {
+  font-size: 15px;
+  color: #111827;
+  font-weight: 700;
+}
+
+.message-panel header span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.message-panel header button {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.message-panel header button:hover {
+  color: #111827;
+}
+
+.customer-summary {
+  width: calc(100% - 24px);
+  margin: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.customer-summary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.system-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #111827;
+  margin: 0;
+  padding: 0 16px 8px;
+}
+
+.system-title strong {
+  font-size: 14px;
+}
+
+.system-title span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  border-top: 1px solid #f1f5f9;
+}
+
+.notice-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.notice-list::-webkit-scrollbar-thumb {
+  background-color: #d8dee8;
+  border-radius: 4px;
+}
+
+.notice-card {
+  padding: 12px 16px;
+  border-radius: 0;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.notice-card:hover {
+  background: #f8fafc;
+}
+
+.notice-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notice-card-head strong {
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notice-card-head time {
+  color: #94a3b8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.notice-card p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.empty-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 86px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.message-pop-enter-active,
+.message-pop-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.message-pop-enter-from,
+.message-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .user-info-trigger {

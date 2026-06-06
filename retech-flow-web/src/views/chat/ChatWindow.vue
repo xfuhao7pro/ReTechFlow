@@ -67,7 +67,7 @@
           v-if="isMyMessage(msg)"
           class="msg-avatar"
           :size="38"
-          :src="getAvatarSrc(userStore.userAvatar)"
+          :src="getAvatarSrc(msg.sender?.avatar || userStore.userAvatar)"
         />
       </div>
       </template>
@@ -250,7 +250,7 @@ const connectWebSocket = () => {
       const payload = JSON.parse(event.data)
 
       // 服务端广播的新消息：{ type: 'chat.message', data: {...} }
-      if (payload.type === 'chat.message' && payload.data) {
+      if ((payload.type === 'chat.message' || payload.type === 'chats.message') && payload.data) {
         const newMsg: ChatMessage = payload.data
 
         // 防止重复：检查消息 ID 是否已存在
@@ -430,10 +430,10 @@ onUnmounted(() => {
 .chat-header {
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  height: 60px;
+  padding: 10px 14px;
+  min-height: 70px;
   background: #fff;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #edf1f5;
   flex-shrink: 0;
 }
 
@@ -447,24 +447,25 @@ onUnmounted(() => {
 .header-goods {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px 8px 8px;
-  background: #f8f9fb;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  background: #f8fafc;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid #f0f2f5;
+  border: 1px solid #edf1f5;
 }
 
 .header-goods:hover {
-  background: #eef3ff;
-  border-color: rgba(64, 158, 255, 0.2);
+  background: #f3f7ff;
+  border-color: rgba(37, 99, 235, 0.2);
 }
 
 .goods-thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
@@ -482,27 +483,29 @@ onUnmounted(() => {
 .goods-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .goods-title {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
+  font-size: 15px;
+  color: #172033;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
 }
 
 .goods-link {
   font-size: 12px;
-  color: #409eff;
+  color: #64748b;
 }
 
 .goods-arrow {
-  color: #c0c4cc;
+  color: #94a3b8;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* ===== 消息区域 ===== */

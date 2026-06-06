@@ -133,6 +133,9 @@
               查看物流
             </el-button>
             <el-button v-if="currentOrder?.status === 2" type="success" @click="handleConfirmFromDialog">确认收货</el-button>
+            <el-button v-if="currentOrder?.status === 1 || currentOrder?.status === 2" type="warning" plain @click="openAppealPrompt">
+              申请申诉
+            </el-button>
             <el-button
               v-if="currentOrder?.status === 0 || currentOrder?.status === 1"
               type="danger"
@@ -410,6 +413,41 @@ const handleConfirmReceipt = async (order: any) => {
     }
   } finally {
     loading.value = false
+  }
+}
+
+const openAppealPrompt = async () => {
+  if (!currentOrder.value) return
+  try {
+    const typeResult = await ElMessageBox.prompt('请输入申诉类型，例如：商品与描述不符、未收到货、物流异常、卖家未发货', '申请申诉', {
+      confirmButtonText: '下一步',
+      cancelButtonText: '取消',
+      inputPattern: /\S+/,
+      inputErrorMessage: '请填写申诉类型',
+    })
+    const descResult = await ElMessageBox.prompt('请描述具体问题，平台后台会根据订单信息和描述进行仲裁。', '申诉说明', {
+      confirmButtonText: '提交申诉',
+      cancelButtonText: '取消',
+      inputType: 'textarea',
+      inputPattern: /\S{6,}/,
+      inputErrorMessage: '请至少填写 6 个字',
+    })
+    const res = await ordersApi.createAppeal(currentOrder.value.order_id, {
+      issue_type: typeResult.value,
+      description: descResult.value,
+    })
+    if (res.code === 200) {
+      ElMessage.success('申诉已提交，订单已进入售后处理中')
+      orderInfoDialogVisible.value = false
+      loadList()
+    } else {
+      ElMessage.error(res.msg || '申诉提交失败')
+    }
+  } catch (e: any) {
+    if (e !== 'cancel') {
+      console.error(e)
+      ElMessage.error('申诉提交失败')
+    }
   }
 }
 

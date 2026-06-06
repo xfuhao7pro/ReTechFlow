@@ -101,7 +101,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             )
 
         await self.send_json({
-            'type': 'chats.message',
+            'type': 'chat.message',
             'data': msg_data,
         })
 

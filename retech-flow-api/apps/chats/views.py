@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from django.utils import timezone
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from .models import ChatSession, ChatMessage, SystemAnnouncement
 from .serializers import ChatSessionSerializer, ChatMessageSerializer, SystemAnnouncementSerializer
 from django.shortcuts import get_object_or_404
@@ -103,7 +105,19 @@ class SendMessageView(APIView):
 
         # 返回完整的消息对象（含嵌套 sender 信息）
         serializer = ChatMessageSerializer(msg)
-        return Response({"code": 200, "msg": "发送成功", "data": serializer.data})
+        message_data = serializer.data
+
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f"chats_{session.id}",
+                {
+                    "type": "chats.message",
+                    "data": message_data,
+                }
+            )
+
+        return Response({"code": 200, "msg": "发送成功", "data": message_data})
 class MessageListView(APIView):
     """
     get：获取会话列表

@@ -1,82 +1,59 @@
 <template>
   <DecorativeBackground>
-  <div class="chat-list-container">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <div class="header-left">
-        <el-icon class="header-icon"><ChatDotRound /></el-icon>
-        <div>
-          <h2>我的消息</h2>
-          <p class="subtitle">与买家/卖家的沟通记录都在这里</p>
-        </div>
-      </div>
-    </div>
-
-    <section v-if="announcements.length" class="system-announcements">
-      <header>
-        <strong>系统消息</strong>
-        <span>平台公告与重要通知</span>
-      </header>
-      <div class="notice-list">
-        <article v-for="notice in announcements" :key="notice.id" class="notice-card">
+    <div class="chat-list-container">
+      <div class="page-header">
+        <div class="header-left">
+          <el-icon class="header-icon"><ChatDotRound /></el-icon>
           <div>
-            <strong>{{ notice.title }}</strong>
-            <span>{{ formatTime(notice.created_at) }}</span>
+            <h2>我的消息</h2>
+            <p class="subtitle">交易沟通、系统通知统一收纳</p>
           </div>
-          <p>{{ notice.content }}</p>
-        </article>
+        </div>
+
       </div>
-    </section>
 
-    <!-- 主体区域 -->
-    <div class="chat-body" v-loading="loading">
-      <div class="chat-layout">
-        <!-- 左侧会话列表 -->
-        <div class="sidebar">
-          <div class="sidebar-header">
-            <span class="sidebar-title">消息</span>
-            <el-badge :value="totalUnread" :hidden="!totalUnread" class="unread-total-badge">
-              <el-icon :size="18" color="#909399"><Bell /></el-icon>
-            </el-badge>
-          </div>
+      <div class="chat-body" v-loading="loading">
+        <div class="chat-layout">
+          <aside class="sidebar">
+            <div class="sidebar-header">
+              <span class="sidebar-title">会话</span>
+              <span class="sidebar-count">{{ sessions.length }} 个联系人</span>
+            </div>
 
-          <template v-if="sessions.length > 0">
-            <div class="session-list">
-              <div
-                class="session-item"
-                v-for="session in sessions"
-                :key="session.id"
-                :class="{ 'is-active': activeSessionId === session.id }"
-                @click="goToChat(session.id)"
-              >
-                <!-- 头像 + 未读气泡 -->
-                <div class="avatar-wrapper">
-                  <el-badge :value="session.unread_count" :hidden="!session.unread_count" :max="99">
-                    <el-avatar
-                      :size="44"
-                      :src="session.other_user?.avatar ? getImageUrl(session.other_user.avatar) : defaultAvatar"
-                    />
-                  </el-badge>
-                  <span class="online-dot"></span>
-                </div>
-
-                <!-- 昵称 + 最后消息 -->
-                <div class="session-info">
-                  <div class="info-top">
-                    <span class="nickname">{{ session.other_user?.nickname || '神秘用户' }}</span>
-                    <span class="time">{{ formatTime(session.updated_at) }}</span>
+            <template v-if="sessions.length > 0">
+              <div class="session-list">
+                <button
+                  class="session-item"
+                  v-for="session in sessions"
+                  :key="session.id"
+                  :class="{ 'is-active': activeSessionId === session.id }"
+                  type="button"
+                  @click="goToChat(session.id)"
+                >
+                  <div class="avatar-wrapper">
+                    <el-badge :value="session.unread_count" :hidden="!session.unread_count" :max="99">
+                      <el-avatar
+                        :size="44"
+                        :src="session.other_user?.avatar ? getImageUrl(session.other_user.avatar) : defaultAvatar"
+                      />
+                    </el-badge>
                   </div>
-                  <div class="info-bottom">
-                    <span class="last-msg" :class="{ 'has-unread': session.unread_count > 0 }">
-                      {{ session.last_message || '暂无消息' }}
-                    </span>
-                  </div>
-                </div>
 
-                <!-- 商品缩略图 -->
-                <div class="session-goods" v-if="session.goods && session.goods.cover">
+                  <div class="session-info">
+                    <div class="info-top">
+                      <span class="nickname">{{ session.other_user?.nickname || '神秘用户' }}</span>
+                      <time>{{ formatTime(session.updated_at) }}</time>
+                    </div>
+                    <div class="info-bottom">
+                      <span class="last-msg" :class="{ 'has-unread': session.unread_count > 0 }">
+                        {{ session.unread_count > 0 ? `${session.unread_count} 条消息待查看` : (session.last_message || '暂无消息') }}
+                      </span>
+                    </div>
+                  </div>
+
                   <el-image
-                    class="goods-cover"
+                    v-if="session.goods?.cover"
+                    class="session-goods"
                     :src="getImageUrl(session.goods.cover)"
                     fit="cover"
                     lazy
@@ -85,48 +62,46 @@
                       <div class="img-error"><el-icon><Picture /></el-icon></div>
                     </template>
                   </el-image>
-                </div>
+                </button>
+              </div>
+            </template>
+
+            <div v-else class="empty-sidebar">
+              <el-empty description="暂无会话" :image-size="86">
+                <el-button type="primary" round @click="$router.push('/market')">
+                  <el-icon class="el-icon--left"><Search /></el-icon>去交易广场
+                </el-button>
+              </el-empty>
+            </div>
+          </aside>
+
+          <main class="chat-main">
+            <ChatWindow
+              v-if="activeSessionId"
+              :session-id="activeSessionId"
+              :session="activeSession"
+              :key="activeSessionId"
+              @message-sent="fetchSessions"
+            />
+            <div v-else class="empty-chat">
+              <div class="empty-chat-inner">
+                <el-icon :size="46"><ChatRound /></el-icon>
+                <p class="empty-text">选择一个会话开始沟通</p>
+                <p class="empty-hint">左侧会话会按最近消息自动排序</p>
               </div>
             </div>
-          </template>
-
-          <div v-else class="empty-sidebar">
-            <el-empty description="暂无消息记录" :image-size="80">
-              <el-button type="primary" round @click="$router.push('/market')">
-                <el-icon class="el-icon--left"><Search /></el-icon>去逛逛
-              </el-button>
-            </el-empty>
-          </div>
-        </div>
-
-        <!-- 右侧聊天窗口 -->
-        <div class="chat-main">
-          <ChatWindow
-            v-if="activeSessionId"
-            :session-id="activeSessionId"
-            :session="activeSession"
-            :key="activeSessionId"
-            @message-sent="fetchSessions"
-          />
-          <div v-else class="empty-chat">
-            <div class="empty-chat-inner">
-              <el-icon :size="48" color="#c0c4cc"><ChatRound /></el-icon>
-              <p class="empty-text">选择左侧会话开始聊天</p>
-              <p class="empty-hint">点击任意会话即可查看消息</p>
-            </div>
-          </div>
+          </main>
         </div>
       </div>
     </div>
-  </div>
   </DecorativeBackground>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Picture, ChatDotRound, ChatRound, Bell, Search } from '@element-plus/icons-vue'
-import chatApi, { type ChatSession, type SystemAnnouncement } from '@/api/chatapi'
+import { Picture, ChatDotRound, ChatRound, Search } from '@element-plus/icons-vue'
+import chatApi, { type ChatSession } from '@/api/chatapi'
 import { getImageUrl } from '@/utils/format'
 import ChatWindow from './ChatWindow.vue'
 import DecorativeBackground from '@/components/DecorativeBackground.vue'
@@ -135,17 +110,10 @@ const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
 const sessions = ref<ChatSession[]>([])
-const announcements = ref<SystemAnnouncement[]>([])
 const activeSessionId = ref<string>('')
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
-// 全部未读总数
-const totalUnread = computed(() => {
-  return sessions.value.reduce((sum, s) => sum + (s.unread_count || 0), 0)
-})
-
-// 当前选中的会话对象（传给 ChatWindow 用于显示对方信息）
 const activeSession = computed(() => {
   if (!activeSessionId.value) return undefined
   return sessions.value.find(s => s.id === activeSessionId.value)
@@ -157,14 +125,11 @@ const fetchSessions = async () => {
     if (res.code === 200 && res.data) {
       sessions.value = res.data
 
-      // 如果当前还没有选中会话
       if (!activeSessionId.value && sessions.value.length > 0) {
         const querySessionId = route.query.sessionId as string
         if (querySessionId && sessions.value.some(s => s.id === querySessionId)) {
-          // 路由带了 sessionId，尝试自动选中
           activeSessionId.value = querySessionId
         } else {
-          // 默认选中第一条会话
           const firstSession = sessions.value[0]
           if (firstSession) {
             activeSessionId.value = firstSession.id
@@ -180,26 +145,14 @@ const fetchSessions = async () => {
   }
 }
 
-const fetchAnnouncements = async () => {
-  try {
-    const res = await chatApi.getSystemAnnouncementsAPI()
-    if (res.code === 200 && res.data) announcements.value = res.data
-  } catch (error) {
-    console.error('获取系统公告失败:', error)
-  }
-}
-
 const goToChat = (sessionId: string) => {
   activeSessionId.value = sessionId
   router.replace({ query: { ...route.query, sessionId } })
   fetchSessions()
 }
 
-// 监听路由变化
 watch(() => route.query.sessionId, (newVal) => {
-  if (newVal && typeof newVal === 'string') {
-    activeSessionId.value = newVal
-  }
+  if (newVal && typeof newVal === 'string') activeSessionId.value = newVal
 }, { immediate: true })
 
 const formatTime = (timeStr: string) => {
@@ -208,47 +161,35 @@ const formatTime = (timeStr: string) => {
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
 
-  if (isToday) {
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  }
+  if (isToday) return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 
-  // 判断是否是昨天
   const yesterday = new Date(now)
   yesterday.setDate(yesterday.getDate() - 1)
-  if (date.toDateString() === yesterday.toDateString()) {
-    return '昨天'
-  }
+  if (date.toDateString() === yesterday.toDateString()) return '昨天'
 
   return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
 }
 
 onMounted(() => {
-  fetchAnnouncements()
   fetchSessions()
 })
 </script>
 
 <style scoped>
 .chat-list-container {
-  animation: fadeIn 0.3s ease;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   padding: 24px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ===== 页面标题 ===== */
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
 }
 
 .header-left {
@@ -258,93 +199,33 @@ onMounted(() => {
 }
 
 .header-icon {
-  font-size: 28px;
-  color: #409eff;
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.12), rgba(138, 101, 255, 0.08));
+  font-size: 26px;
+  color: #2563eb;
+  background: #eef4ff;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .page-header h2 {
-  font-size: 20px;
-  color: #1f2f47;
-  margin: 0 0 2px;
+  font-size: 22px;
+  color: #172033;
+  margin: 0 0 4px;
   font-weight: 700;
 }
 
 .subtitle {
-  color: #909399;
+  color: #64748b;
   font-size: 13px;
   margin: 0;
 }
 
-.system-announcements {
-  padding: 16px;
-  border: 1px solid rgba(59, 130, 246, 0.18);
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.system-announcements header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.system-announcements header strong {
-  color: #172033;
-  font-size: 16px;
-}
-
-.system-announcements header span {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.notice-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.notice-card {
-  padding: 12px;
-  border-radius: 8px;
-  background: #f8fafc;
-}
-
-.notice-card div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.notice-card strong {
-  color: #172033;
-  font-size: 14px;
-}
-
-.notice-card span,
-.notice-card p {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.notice-card p {
-  margin: 8px 0 0;
-  line-height: 1.6;
-}
-
-/* ===== 主体布局 ===== */
 .chat-body {
   flex: 1;
   min-height: 0;
-  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(64, 158, 255, 0.1);
-  box-shadow: 0 2px 12px rgba(31, 49, 85, 0.06);
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   background: #fff;
 }
 
@@ -354,160 +235,129 @@ onMounted(() => {
   width: 100%;
 }
 
-/* ===== 左侧会话列表 ===== */
 .sidebar {
-  width: 320px;
-  border-right: 1px solid #f0f2f5;
+  width: 340px;
+  border-right: 1px solid #edf1f5;
   display: flex;
   flex-direction: column;
-  background-color: #fafbfd;
+  background: #fbfcfe;
 }
 
 .sidebar-header {
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f2f5;
+  padding: 0 18px;
+  border-bottom: 1px solid #edf1f5;
   background: #fff;
   flex-shrink: 0;
 }
 
 .sidebar-title {
   font-size: 15px;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  color: #172033;
+}
+
+.sidebar-count {
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 .session-list {
   flex: 1;
   overflow-y: auto;
+  padding: 8px;
 }
 
-/* 滚动条 */
 .session-list::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
+
 .session-list::-webkit-scrollbar-thumb {
-  background-color: #dcdfe6;
+  background-color: #d8dee8;
   border-radius: 4px;
-}
-.session-list::-webkit-scrollbar-thumb:hover {
-  background-color: #c0c4cc;
 }
 
 .session-item {
+  width: 100%;
   display: flex;
   align-items: center;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid #f5f6f8;
-  position: relative;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
 }
 
-.session-item:hover:not(.is-active) {
-  background-color: #f0f4ff;
+.session-item:hover {
+  background: #f3f7ff;
 }
 
 .session-item.is-active {
-  background: linear-gradient(90deg, rgba(64, 158, 255, 0.1) 0%, rgba(64, 158, 255, 0.04) 100%);
-  border-left: 3px solid #409eff;
-  padding-left: 13px;
+  background: #eef5ff;
+  border-color: rgba(37, 99, 235, 0.18);
 }
 
-.session-item:last-child {
-  border-bottom: none;
-}
-
-/* 头像 */
 .avatar-wrapper {
-  position: relative;
-  margin-right: 12px;
   flex-shrink: 0;
 }
 
-.online-dot {
-  position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 10px;
-  height: 10px;
-  background: #67c23a;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  display: none; /* 预留在线状态，暂不启用 */
-}
-
-/* 会话信息 */
 .session-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .info-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 
 .nickname {
   font-size: 14px;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  color: #172033;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 130px;
 }
 
-.is-active .nickname {
-  color: #409eff;
-}
-
-.time {
+.info-top time {
   font-size: 11px;
-  color: #c0c4cc;
+  color: #94a3b8;
   flex-shrink: 0;
-  margin-left: 8px;
-}
-
-.info-bottom {
-  display: flex;
 }
 
 .last-msg {
+  display: block;
+  max-width: 100%;
   font-size: 13px;
-  color: #909399;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .last-msg.has-unread {
-  color: #606266;
-  font-weight: 500;
+  color: #1d4ed8;
+  font-weight: 700;
 }
 
-/* 商品缩略图 */
 .session-goods {
-  margin-left: 10px;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #f0f2f5;
+  border: 1px solid #eef2f7;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.goods-cover {
-  width: 100%;
-  height: 100%;
 }
 
 .img-error {
@@ -528,13 +378,11 @@ onMounted(() => {
   justify-content: center;
 }
 
-/* ===== 右侧聊天区 ===== */
 .chat-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
-  position: relative;
+  background: #f6f8fb;
   min-width: 0;
 }
 
@@ -551,30 +399,38 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  color: #94a3b8;
 }
 
 .empty-text {
   font-size: 16px;
-  color: #606266;
+  color: #334155;
   margin: 8px 0 0;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .empty-hint {
   font-size: 13px;
-  color: #c0c4cc;
+  color: #94a3b8;
   margin: 0;
 }
 
-/* Badge 样式微调 */
 .avatar-wrapper :deep(.el-badge__content) {
-  font-size: 11px;
-  padding: 0 5px;
-  height: 16px;
-  line-height: 16px;
+  font-size: 10px;
 }
 
-.unread-total-badge :deep(.el-badge__content) {
-  font-size: 10px;
+@media (max-width: 980px) {
+  .chat-list-container {
+    padding: 14px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 300px;
+  }
 }
 </style>
