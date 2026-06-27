@@ -333,18 +333,21 @@ const handleLogout = () => {
 .message-panel {
   position: absolute;
   top: 42px;
-  left: calc(100% + 12px);
+  left: calc(100% + 10px);
   right: auto;
-  width: 360px;
-  max-height: 460px;
+  display: flex;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(520px, calc(100dvh - 76px));
+  flex-direction: column;
   z-index: 50;
   padding: 0;
   color: #1f2937;
   background: #fff;
-  border: 1px solid #d9e1ea;
-  border-radius: 10px;
-  box-shadow: 0 12px 28px rgba(31, 49, 85, 0.14);
+  border: 1px solid #dce3ec;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(22, 34, 55, 0.16), 0 2px 8px rgba(22, 34, 55, 0.06);
   overflow: hidden;
+  transform-origin: top left;
 }
 
 .message-panel::before {
@@ -361,6 +364,7 @@ const handleLogout = () => {
 }
 
 .message-panel header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -400,6 +404,7 @@ const handleLogout = () => {
 }
 
 .customer-summary {
+  flex: 0 0 auto;
   width: calc(100% - 24px);
   margin: 12px;
   padding: 10px 12px;
@@ -422,6 +427,7 @@ const handleLogout = () => {
 }
 
 .system-title {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -441,11 +447,14 @@ const handleLogout = () => {
 
 .notice-list {
   display: flex;
+  min-height: 0;
   flex-direction: column;
   gap: 0;
-  max-height: 300px;
+  max-height: min(320px, calc(100dvh - 242px));
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid #f1f5f9;
+  scrollbar-gutter: stable;
 }
 
 .notice-list::-webkit-scrollbar {
@@ -493,6 +502,7 @@ const handleLogout = () => {
   color: #64748b;
   font-size: 13px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .empty-notice {
@@ -506,13 +516,68 @@ const handleLogout = () => {
 
 .message-pop-enter-active,
 .message-pop-leave-active {
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition:
+    opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .message-pop-enter-from,
 .message-pop-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px) scale(0.97);
+}
+
+@media (max-width: 760px) {
+  .message-panel {
+    position: fixed;
+    top: 58px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100dvh - 70px);
+    transform-origin: top right;
+  }
+
+  .message-panel::before {
+    display: none;
+  }
+
+  .message-panel header {
+    padding: 13px 14px 11px;
+  }
+
+  .customer-summary {
+    width: calc(100% - 20px);
+    margin: 10px;
+  }
+
+  .system-title {
+    padding: 0 14px 8px;
+  }
+
+  .notice-list {
+    max-height: calc(100dvh - 226px);
+  }
+
+  .notice-card {
+    padding: 12px 14px;
+  }
+
+  .notice-card-head {
+    display: grid;
+    gap: 3px;
+  }
+
+  .notice-card-head time {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-pop-enter-active,
+  .message-pop-leave-active {
+    transition-duration: 0.01ms;
+  }
 }
 
 .user-info-trigger {
