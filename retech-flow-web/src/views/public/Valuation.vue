@@ -132,21 +132,33 @@
         <div class="result-panel">
 
           <!-- 估价失败状态 -->
-          <div v-if="valuationStore.valuationError && !valuationStore.isValuating" class="result-empty">
-            <div class="empty-content">
-              <div class="ai-scan-container">
-                <div class="device-icon">
-                  <el-icon :size="64"><WarningFilled /></el-icon>
+          <div v-if="valuationStore.valuationError && !valuationStore.isValuating" class="result-empty result-error">
+            <div class="error-content">
+              <div class="error-heading">
+                <div class="error-icon">
+                  <el-icon><WarningFilled /></el-icon>
+                </div>
+                <div>
+                  <span>识别未通过</span>
+                  <h3>本次估价未完成</h3>
                 </div>
               </div>
 
-              <div class="empty-text">
-                <h3>本次估价未完成</h3>
+              <div class="error-reason">
+                <span>系统反馈</span>
                 <p>{{ cleanValuationError }}</p>
-                <div class="features-tags">
-                  <span>请检查图片后重新尝试</span>
-                </div>
               </div>
+
+              <div class="error-checklist">
+                <div><el-icon><CircleCheck /></el-icon><span>请上传真实的二手数码产品图片</span></div>
+                <div><el-icon><CircleCheck /></el-icon><span>确保主体完整、清晰且光线充足</span></div>
+                <div><el-icon><CircleCheck /></el-icon><span>避免人物、截图或与设备无关的内容</span></div>
+              </div>
+
+              <button class="error-retry-btn" type="button" @click="handleAnalyze">
+                <el-icon><Refresh /></el-icon>
+                <span>重新尝试</span>
+              </button>
             </div>
           </div>
 
@@ -330,7 +342,8 @@ import {
   Iphone,
   QuestionFilled,
   WarningFilled,
-  Close
+  Close,
+  CircleCheck
 } from '@element-plus/icons-vue'
 import { ref, computed, onUnmounted, onActivated, onDeactivated, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
