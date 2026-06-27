@@ -4,9 +4,7 @@
       <h1 class="page-title">
         <span class="gradient-text">AI</span> 智能估价
       </h1>
-      <div class="page-sub-wrapper">
-        <p class="page-sub">图片 + 描述，<span>AI全程代劳</span> 为您生成精准估价与发布文案</p>
-      </div>
+      <p class="page-sub">上传实拍图和设备描述，自动识别型号、成色并生成参考价格</p>
     </div>
 
     <el-row :gutter="32" class="main-layout">
@@ -179,16 +177,14 @@
           <!-- AI 深度分析：深色神秘科技风等待动画 -->
           <div v-if="valuationStore.isValuating" class="ai-mystery-analysis">
             <!-- 取消估价按钮 -->
-            <el-button
+            <button
               class="cancel-valuation-btn"
-              type="danger"
-              plain
-              size="default"
-              round
+              type="button"
               @click="cancelValuation"
             >
-              取消估价
-            </el-button>
+              <el-icon><Close /></el-icon>
+              <span>取消</span>
+            </button>
 
             <div class="mystery-bg-glow"></div>
 
@@ -333,7 +329,8 @@ import {
   Refresh,
   Iphone,
   QuestionFilled,
-  WarningFilled
+  WarningFilled,
+  Close
 } from '@element-plus/icons-vue'
 import { ref, computed, onUnmounted, onActivated, onDeactivated, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
