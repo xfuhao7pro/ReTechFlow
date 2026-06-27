@@ -791,10 +791,15 @@
   margin-bottom: 0;
 }
 .price-card::before {
-  content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px;
-  background: radial-gradient(circle, rgba(64,158,255,0.08) 0%, transparent 70%); border-radius: 50%;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #fb7185, #f59e0b 52%, #14b8a6);
 }
-.price-range-container { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 0; }
+.price-range-container { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 0; }
 .price-range-main { display: flex; align-items: baseline; gap: 4px; }
 .currency { font-size: 24px; color: #ef4444; font-weight: 700; font-family: 'DIN Alternate', sans-serif; margin-right: 2px; }
 .amount {
@@ -806,12 +811,51 @@
 .separator { font-size: 24px; color: #94a3b8; margin: 0 6px; font-weight: 300; }
 
 .price-badge {
-  display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
-  background: rgba(64,158,255,0.06); padding: 4px 12px; border-radius: 8px;
-  border: 1px solid rgba(64,158,255,0.1);
+  display: flex;
+  min-width: 142px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 2px 0 2px 24px;
+  border-left: 1px solid #dbe4ee;
 }
-.price-badge .label { font-size: 12px; color: #64748b; margin-bottom: 0; transform: scale(0.9); transform-origin: right center; }
-.price-badge .value { font-size: 20px; font-weight: 700; color: #0ea5e9; font-family: 'DIN Alternate', sans-serif; line-height: 1.2; }
+.price-badge .label {
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.price-badge .value {
+  color: #0f766e;
+  font-family: 'DIN Alternate', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+.price-badge-note {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .price-range-container {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .price-badge {
+    width: 100%;
+    box-sizing: border-box;
+    align-items: flex-start;
+    padding: 12px 0 0;
+    border-top: 1px solid #dbe4ee;
+    border-left: 0;
+  }
+}
 
 /* 文案卡片：吃掉估价区剩余高度，与左侧描述区视觉平衡；过长时随 result-content 一起滚动 */
 .copy-card {

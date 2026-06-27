@@ -250,8 +250,9 @@
                     <span class="amount">{{ result.priceMax }}</span>
                   </div>
                   <div class="price-badge">
-                    <span class="label">建议出售</span>
+                    <span class="label">建议发布价</span>
                     <span class="value">¥{{ result.suggestPrice }}</span>
+                    <span class="price-badge-note">结合当前成色与行情</span>
                   </div>
                 </div>
               </div>
