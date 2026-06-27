@@ -70,6 +70,7 @@
 
               <!-- 消息通知按钮 -->
               <div
+                ref="messageEntryRef"
                 class="message-entry"
                 @mouseenter="openMessagePreview"
                 @mouseleave="closeMessagePreview"
@@ -89,6 +90,7 @@
                   <section
                     v-if="messagePanelVisible"
                     class="message-panel"
+                    :style="messagePanelStyle"
                     @mouseenter="openMessagePreview"
                     @mouseleave="closeMessagePreview"
                   >
@@ -149,7 +151,7 @@ import { useValuationStore } from '@/store/valuationStore'
 import { storeToRefs } from 'pinia'
 import { getImageUrl } from '@/utils/format'
 import chatApi, { type SystemAnnouncement } from '@/api/chatapi'
-import { computed, ref, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { openAuthDialog } from '@/composables/useAuthDialog'
 import {
   User,
@@ -173,9 +175,32 @@ const totalUnread = ref(0)
 const announcements = ref<SystemAnnouncement[]>([])
 const messagePanelVisible = ref(false)
 const messagePanelPinned = ref(false)
+const messageEntryRef = ref<HTMLElement | null>(null)
+const messagePanelPosition = ref({ top: 58, left: 12, width: 360 })
 let unreadTimer: number | null = null
 
 const messageBadgeCount = computed(() => totalUnread.value + announcements.value.length)
+const messagePanelStyle = computed(() => ({
+  top: `${messagePanelPosition.value.top}px`,
+  left: `${messagePanelPosition.value.left}px`,
+  width: `${messagePanelPosition.value.width}px`,
+}))
+
+const updateMessagePanelPosition = () => {
+  const entry = messageEntryRef.value
+  if (!entry) return
+  const rect = entry.getBoundingClientRect()
+  const edge = 12
+  const gap = 10
+  const width = Math.min(360, Math.max(0, window.innerWidth - edge * 2))
+  const preferredLeft = rect.right + gap
+  const left = Math.max(edge, Math.min(preferredLeft, window.innerWidth - width - edge))
+  messagePanelPosition.value = {
+    top: Math.max(edge, rect.bottom + 12),
+    left,
+    width,
+  }
+}
 
 const fetchUnreadCount = async () => {
   if (!isLoggedIn.value) return
@@ -223,7 +248,12 @@ watch(isLoggedIn, (newVal) => {
 
 onUnmounted(() => {
   if (unreadTimer) clearInterval(unreadTimer)
+  window.removeEventListener('resize', updateMessagePanelPosition)
   valuationStore.closeWS()
+})
+
+onMounted(() => {
+  window.addEventListener('resize', updateMessagePanelPosition)
 })
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
@@ -236,6 +266,7 @@ const getSafeAvatarUrl = (avatarPath: string) => {
 }
 
 const openMessagePreview = () => {
+  updateMessagePanelPosition()
   messagePanelVisible.value = true
 }
 
@@ -244,6 +275,7 @@ const closeMessagePreview = () => {
 }
 
 const toggleMessagePanel = () => {
+  updateMessagePanelPosition()
   messagePanelPinned.value = !messagePanelPinned.value
   messagePanelVisible.value = messagePanelPinned.value || !messagePanelVisible.value
 }
@@ -331,12 +363,10 @@ const handleLogout = () => {
 }
 
 .message-panel {
-  position: absolute;
-  top: 42px;
-  left: calc(100% + 10px);
+  position: fixed;
   right: auto;
   display: flex;
-  width: min(360px, calc(100vw - 24px));
+  box-sizing: border-box;
   max-height: min(520px, calc(100dvh - 76px));
   flex-direction: column;
   z-index: 50;
@@ -347,20 +377,7 @@ const handleLogout = () => {
   border-radius: 8px;
   box-shadow: 0 16px 40px rgba(22, 34, 55, 0.16), 0 2px 8px rgba(22, 34, 55, 0.06);
   overflow: hidden;
-  transform-origin: top left;
-}
-
-.message-panel::before {
-  content: "";
-  position: absolute;
-  top: 14px;
-  left: -6px;
-  width: 12px;
-  height: 12px;
-  background: #fff;
-  border-left: 1px solid #d9e1ea;
-  border-top: 1px solid #d9e1ea;
-  transform: rotate(45deg);
+  transform-origin: top right;
 }
 
 .message-panel header {
@@ -529,17 +546,8 @@ const handleLogout = () => {
 
 @media (max-width: 760px) {
   .message-panel {
-    position: fixed;
-    top: 58px;
-    right: 12px;
-    left: 12px;
-    width: auto;
     max-height: calc(100dvh - 70px);
     transform-origin: top right;
-  }
-
-  .message-panel::before {
-    display: none;
   }
 
   .message-panel header {
@@ -708,8 +716,10 @@ const handleLogout = () => {
 
 .common-layout {
   height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
 }
 
 .common-layout > .el-container {
@@ -734,9 +744,12 @@ const handleLogout = () => {
 }
 
 .header-content {
-  width: 1000px; /* 从 888px 加大以容纳新增的图标和长昵称 */
+  width: 100%;
+  max-width: 1000px;
   margin: 0 auto;
   height: 100%;
+  box-sizing: border-box;
+  padding: 0 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -748,6 +761,7 @@ const handleLogout = () => {
 }
 
 .header-center {
+  min-width: 0;
   flex: 1;
   display: flex;
   justify-content: center;
@@ -759,6 +773,27 @@ const handleLogout = () => {
   align-items: center;
   gap: 15px;
   flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .header-content {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .header-left {
+    display: none;
+  }
+
+  .header-center {
+    justify-content: flex-start;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
 }
 
 /* 占满 header 以下区域；长页面（首页等）在 el-main 内滚动，勿在 main-content 上 hidden 裁切 */
