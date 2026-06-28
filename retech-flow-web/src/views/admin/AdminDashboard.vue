@@ -56,10 +56,10 @@
             </div>
           </div>
           <div class="todo-list">
-            <div v-for="item in todoCards" :key="item.label" class="todo-item">
+            <button v-for="item in todoCards" :key="item.label" class="todo-item" type="button" @click="router.push(item.path)">
               <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </div>
+              <strong>{{ item.value }}</strong><small>前往处理</small>
+            </button>
           </div>
         </section>
 
@@ -202,11 +202,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import adminApi from '@/api/adminapi'
 import { getImageUrl } from '@/utils/format'
 
 const loading = ref(false)
 const dashboard = ref<any>(null)
+const router = useRouter()
 const gridLines = [48, 108, 168, 228, 288]
 
 const goodsStatusMap: Record<number, string> = {
@@ -235,7 +237,7 @@ const statCards = computed(() => {
     { label: '在售商品', value: cards.on_sale_goods || 0, hint: '交易广场可见', tone: 'cyan' },
     { label: '订单总数', value: cards.orders || 0, hint: `${cards.pending_ship_orders || 0} 个待发货`, tone: 'orange' },
     { label: '成交金额', value: `￥${formatAmount(cards.paid_amount || 0)}`, hint: '已付款订单', tone: 'red' },
-    { label: '生效公告', value: cards.active_announcements || 0, hint: '正在展示', tone: 'purple' },
+    { label: '待处理申诉', value: cards.pending_appeals || 0, hint: '需要仲裁处理', tone: 'purple' },
   ]
 })
 
@@ -265,10 +267,11 @@ const orderStatusMax = computed(() => Math.max(1, ...orderStatusList.value.map(i
 const todoCards = computed(() => {
   const todo = dashboard.value?.todo || {}
   return [
-    { label: '商品待审核', value: todo.pending_goods || 0 },
-    { label: '实名待审核', value: todo.pending_identity || 0 },
-    { label: '订单待发货', value: todo.pending_ship_orders || 0 },
-    { label: '售后订单', value: todo.after_sale_orders || 0 },
+    { label: '商品待审核', value: todo.pending_goods || 0, path: '/admin/goods' },
+    { label: '实名待审核', value: todo.pending_identity || 0, path: '/admin/identity' },
+    { label: '订单待发货', value: todo.pending_ship_orders || 0, path: '/admin/orders' },
+    { label: '售后订单', value: todo.after_sale_orders || 0, path: '/admin/orders' },
+    { label: '申诉待仲裁', value: todo.pending_appeals || 0, path: '/admin/appeals' },
   ]
 })
 
@@ -514,11 +517,20 @@ onMounted(loadDashboard)
 }
 
 .todo-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
   padding: 14px;
   border: 1px solid #e8eef6;
   border-radius: 8px;
   background: #f8fafc;
+  font: inherit;
 }
+
+.todo-item:hover { border-color: #9db7d6; background: #f2f6fb; }
 
 .todo-item span {
   color: #64748b;
@@ -526,12 +538,14 @@ onMounted(loadDashboard)
 }
 
 .todo-item strong {
-  display: block;
-  margin-top: 8px;
+  grid-row: 1 / span 2;
+  grid-column: 2;
   color: #0f172a;
   font-size: 26px;
   line-height: 1;
 }
+
+.todo-item small { margin-top: 6px; color: #1f5eae; font-size: 11px; }
 
 .status-list,
 .rank-list {

@@ -11,7 +11,7 @@ from apps.chats.models import SystemAnnouncement
 from apps.chats.serializers import SystemAnnouncementSerializer
 from apps.goods.models import Category, CategoryAttribute, Goods, GoodsStatusChoices
 from apps.goods.serializers import GoodsSerializer
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderAppeal
 from apps.orders.serializers import OrderSerializer
 from apps.users.models import IdentityVerificationStatusChoices, UserRoleChoices
 
@@ -361,6 +361,7 @@ class AdminDashboardView(AdminPermissionMixin, APIView):
                 ).count(),
                 "paid_amount": float(paid_orders.aggregate(total=Sum("amount"))["total"] or 0),
                 "active_announcements": SystemAnnouncement.objects.filter(is_active=True).count(),
+                "pending_appeals": OrderAppeal.objects.filter(status__in=[0, 1]).count(),
             },
             "goods_status": goods_status,
             "order_status": order_status,
@@ -380,6 +381,7 @@ class AdminDashboardView(AdminPermissionMixin, APIView):
                 ).count(),
                 "pending_ship_orders": Order.objects.filter(status=1).count(),
                 "after_sale_orders": Order.objects.filter(status=5).count(),
+                "pending_appeals": OrderAppeal.objects.filter(status__in=[0, 1]).count(),
             },
             "recent_goods": GoodsSerializer(
                 Goods.objects.select_related("seller", "category").prefetch_related("images").order_by("-created_at")[:5],
