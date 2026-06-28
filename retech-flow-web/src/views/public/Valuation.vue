@@ -262,7 +262,6 @@
             <el-card class="result-card copy-card" shadow="never">
               <div class="result-section-title">
                 <span class="title-text">AI 生成发布文案</span>
-                <span class="regenerate-tip">结果不满意？</span>
                 <button
                   class="regenerate-btn"
                   @click="handleRegenerate"
