@@ -24,23 +24,11 @@
   inset: 64px 0 0;
   z-index: -2;
   pointer-events: none;
-  background:
-    linear-gradient(rgba(94, 114, 145, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(94, 114, 145, 0.045) 1px, transparent 1px),
-    linear-gradient(180deg, #f3f7fc 0%, #f8fafc 42%, #f1f5f9 100%);
-  background-size: 32px 32px, 32px 32px, 100% 100%;
+  background: linear-gradient(135deg, #eef5fb 0%, #f7f9fc 48%, #f8f3f6 100%);
 }
 
 .valuation-page::after {
-  content: '';
-  position: fixed;
-  top: 64px;
-  left: 0;
-  right: 0;
-  height: 4px;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(90deg, #2563eb 0 34%, #14b8a6 34% 67%, #fb7185 67% 100%);
+  display: none;
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #dcdfe6; border-radius: 4px; }
@@ -121,17 +109,7 @@
 
 .upload-block::before,
 .desc-block::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 20px;
-  right: 20px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-}
-
-.upload-block::before {
-  background: linear-gradient(90deg, #14b8a6, #38bdf8);
+  display: none;
 }
 
 /* Step 2: 描述块 - 与右侧结果区等高分给中间区域，内部可滚动 */
@@ -145,10 +123,6 @@
   overflow: hidden;
   border-color: rgba(251, 113, 133, 0.18);
   background: linear-gradient(145deg, #fff 0%, #fff8f7 54%, #f8fafc 100%);
-}
-
-.desc-block::before {
-  background: linear-gradient(90deg, #fb7185, #f59e0b);
 }
 
 .step-label {
@@ -791,13 +765,7 @@
   margin-bottom: 0;
 }
 .price-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #fb7185, #f59e0b 52%, #14b8a6);
+  display: none;
 }
 .price-range-container { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 0; }
 .price-range-main { display: flex; align-items: baseline; gap: 4px; }
@@ -941,8 +909,35 @@
 .is-streaming .desc-input-area :deep(.el-textarea__inner) { border-color: transparent; }
 
 .action-buttons {
-  margin-top: 0;
-  padding-top: 0;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e8eef6;
   flex-shrink: 0;
+}
+.action-buttons :deep(.el-button) {
+  height: 42px;
+  border-radius: 9px;
+  font-weight: 700;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.action-buttons .el-col:first-child :deep(.el-button) {
+  border-color: #d7e4f3;
+  background: #f4f8fd;
+  color: #365b86;
+}
+.action-buttons .el-col:first-child :deep(.el-button:hover) {
+  border-color: #b9cee6;
+  background: #eaf2fb;
+  color: #244f7e;
+}
+.action-buttons .el-col:last-child :deep(.el-button) {
+  border: 0;
+  background: linear-gradient(110deg, #2563eb 0%, #0f75d8 58%, #0891b2 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+.action-buttons .el-col:last-child :deep(.el-button:hover) {
+  background: linear-gradient(110deg, #1d4ed8 0%, #0b69c7 58%, #0e829d 100%);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
 }
 .el-button { border-radius: 8px; font-weight: 600; }
