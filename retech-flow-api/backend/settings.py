@@ -4,9 +4,12 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 from corsheaders.defaults import default_headers
-from backend.project_config import PROJECT_CONFIG
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+from backend.project_config import PROJECT_CONFIG
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -136,15 +139,24 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "5"))
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+CACHE_BACKEND = os.getenv("CACHE_BACKEND", "memory" if DEBUG else "redis")
+if CACHE_BACKEND == "memory":
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "retech-flow-local-cache",
         },
-    },
-}
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        },
+    }
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
