@@ -10,13 +10,13 @@
 
 ## 本地运行
 
-后端依赖 MySQL 和 Redis。数据库连接仍由本地 `retech-flow-api/mysql.cnf` 管理，不提交到 Git。
+后端使用 `uv` 管理 Python 3.12 和依赖，版本以 `pyproject.toml` 与 `uv.lock` 为准。启动时会自动读取本地 `retech-flow-api/.env`；可复制 `.env.example` 创建，真实密钥不要提交。后端依赖 MySQL 和 Redis，数据库连接仍由本地 `retech-flow-api/mysql.cnf` 管理，不提交到 Git。
 
 ```powershell
 cd .\retech-flow-api
-python -m pip install -r .\requirements.txt
-python .\manage.py check
-daphne -b 127.0.0.1 -p 8000 backend.asgi:application
+uv sync
+uv run python .\manage.py check
+uv run daphne -b 127.0.0.1 -p 8000 backend.asgi:application
 ```
 
 ```powershell

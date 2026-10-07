@@ -1,10 +1,17 @@
+import os
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
 PROJECT_CONFIG = {
-    "zhipuai_api_key": "b5bb4f95247341d4bc9bc04335c230a4.hFMQh7DrWtcprA2b",
+    "zhipuai_api_key": os.getenv("ZHIPUAI_API_KEY", ""),
     "email": {
-        "host": "smtp.163.com",
-        "port": 465,
-        "use_ssl": True,
-        "user": "xfuhao7email@163.com",
-        "password": "THUMxKmT6eseR7Vg",
+        "host": os.getenv("EMAIL_HOST", "smtp.163.com"),
+        "port": int(os.getenv("EMAIL_PORT", "465")),
+        "use_ssl": env_bool("EMAIL_USE_SSL", True),
+        "user": os.getenv("EMAIL_HOST_USER", ""),
+        "password": os.getenv("EMAIL_HOST_PASSWORD", ""),
     },
 }
