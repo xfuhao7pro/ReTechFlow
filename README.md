@@ -1,35 +1,33 @@
 # ReTechFlow
 
-基于 Django、Vue 和 Channels 的二手 3C 智能估价与交易平台。
+ReTechFlow 是基于 Django 与 Vue 3 的二手 3C 智能估价与交易平台，面向闲置手机、电脑等设备的信息发布与交易需求。系统提供图文辅助估价、商品发布与审核、订单管理、在线聊天、模拟钱包和交易申诉功能。
 
-## 目录
+## 项目结构
 
-- `retech-flow-api/`：Django API、WebSocket、订单与估价业务。
-- `retech-flow-web/`：Vue 3 前端。
-- `二手交易平台需求说明书.md`：当前需求说明。
+- [retech-flow-api](retech-flow-api/README.md)：Django 后端，使用 MySQL 保存数据，Channels 提供即时通信。
+- [retech-flow-web](retech-flow-web/README.md)：Vue 3 前端，包含用户页面与平台管理页面。
 
-## 本地运行
+## 本地启动
 
-后端使用 `uv` 管理 Python 3.12 和依赖，版本以 `pyproject.toml` 与 `uv.lock` 为准。启动时会自动读取本地 `retech-flow-api/.env`；可复制 `.env.example` 创建，真实密钥不要提交。后端依赖 MySQL 和 Redis，数据库连接仍由本地 `retech-flow-api/mysql.cnf` 管理，不提交到 Git。
+准备 Python 3.12、uv、MySQL 8、Node.js 22.12 及以上版本和 npm。先按[后端说明](retech-flow-api/README.md)创建数据库，配置 `mysql.cnf` 与 `.env`，再打开两个终端分别启动：
+
+**后端（从项目根目录执行）**
 
 ```powershell
-cd .\retech-flow-api
-uv sync
-uv run python .\manage.py check
+cd retech-flow-api
+uv sync --frozen
+uv run python manage.py migrate
 uv run daphne -b 127.0.0.1 -p 8000 backend.asgi:application
 ```
 
+**前端（从项目根目录执行）**
+
 ```powershell
-cd .\retech-flow-web
-npm install
-npm run build
-npm run dev
+cd retech-flow-web
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-## 生产部署约束
+首页：`http://127.0.0.1:5173/home`；管理端：`http://127.0.0.1:5173/admin/login`。
 
-1. 复制 `.env.example` 的变量到进程管理器或容器环境，不要提交真实密钥。
-2. 生产环境必须设置 `DJANGO_DEBUG=False`、`DJANGO_SECRET_KEY`、`DJANGO_ALLOWED_HOSTS`。
-3. 生产环境使用 `CHANNEL_LAYER_BACKEND=redis`，保证 WebSocket 在多进程下可用。
-4. 前端生产构建必须设置 HTTPS API 地址；未显式指定时，WebSocket 地址会从 API 地址推导为 `wss://`。
-5. `ENABLE_MOCK_RECHARGE=False` 时，模拟充值接口不可用。正式支付需要单独接入支付平台和流水表。
+估价、邮件和物流功能需配置相应服务凭据，真实配置仅保存在本地。钱包使用模拟余额，估价结果供用户核对参考。
